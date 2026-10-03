@@ -1,1622 +1,445 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoidLumina - тёмное фэнтези выживание | Minecraft сервер</title>
-<meta name="description" content="VoidLumina - Minecraft сервер в стиле тёмного фэнтези. Фиолетовые сумерки, могилы погибших и ранги, которые зарабатывают временем и заслугами. Minecraft 26.2.">
-<!-- ЗАМЕНИ адрес сервера и ссылку на Discord: ищи внизу страницы комментарий "НАСТРОЙКА" -->
-<meta property="og:title" content="VoidLumina - тёмное фэнтези выживание">
-<meta property="og:description" content="Мир, где умирает свет. Фиолетовые сумерки, могилы погибших и ранги за время и заслуги.">
-<meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23120a2e'/%3E%3Cpath d='M17.5 6l1.8 5.2 5.2 1.8-5.2 1.8L17.5 20l-1.8-5.2-5.2-1.8 5.2-1.8z' fill='%23b185ff'/%3E%3C/svg%3E">
-<style>
-/* ============================================================
-   Почему так устроено: почти всё движение построено на
-   transform/opacity, чтобы не получать layout-проблемы на мобильных.
-   layout: асимметричный bento для рангов по заслугам + линейная
-   лестница для рангов по времени.
-   ============================================================ */
-
-:root{
-  --bg:#08080f;
-  --bg-soft:#0d0d1a;
-  --surface-1:rgba(255,255,255,.045);
-  --surface-2:rgba(255,255,255,.07);
-  --hair:rgba(255,255,255,.10);
-  --hair-strong:rgba(255,255,255,.18);
-  --purple:#8b5cf6;
-  --purple-deep:#6d28d9;
-  --violet-soft:#a78bfa;
-  --rose:#ec4899;
-  --pink-glow:#f0abfc;
-  --white:#f7f4ff;
-  --text:#e4e0f2;
-  --muted:#9b94b8;
-  --grad-main:linear-gradient(180deg,var(--white) 0%,#d9c8ff 32%,var(--purple) 66%,var(--rose) 100%);
-  --grad-rose:linear-gradient(135deg,var(--purple) 0%,var(--rose) 100%);
-  --grad-white-violet:linear-gradient(120deg,#fff 0%,var(--violet-soft) 60%,var(--purple) 100%);
-  --ease:cubic-bezier(.32,.72,0,1);
-  --ease-out:cubic-bezier(.16,1,.3,1);
-  --section-pad:clamp(90px,12vh,150px);
-  --radius-xl:2rem;
-  --radius-lg:1.25rem;
-  --font-display:'Cinzel',serif;
-  --font-body:'Manrope',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-}
-
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-html{scroll-behavior:smooth}
-
-body{
-  font-family:var(--font-body);
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.6;
-  font-weight:400;
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
-}
-
-img,svg{display:block;max-width:100%}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
-::selection{background:rgba(139,92,246,.45);color:#fff}
-:focus-visible{outline:2px solid var(--purple);outline-offset:3px;border-radius:6px}
-
-::-webkit-scrollbar{width:10px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--purple-deep),var(--rose));border-radius:8px;border:2px solid var(--bg)}
-
-h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.02em}
-h2{font-size:clamp(2rem,5vw,3.4rem);line-height:1.1}
-.mono{font-family:var(--font-mono)}
-
-/* ---------- фоновые слои ---------- */
-
-.layer{position:fixed;inset:0;z-index:-3;pointer-events:none}
-.layer-in{position:absolute;inset:0;overflow:hidden}
-
-.orb{
-  position:absolute;
-  border-radius:50%;
-  filter:blur(110px);
-  will-change:transform;
-}
-.orb-violet{width:56vw;height:56vw;top:-18vw;left:-14vw;background:radial-gradient(circle,rgba(124,58,237,.34),transparent 65%);animation:orbFloat 26s var(--ease-out) infinite alternate}
-.orb-rose{width:48vw;height:48vw;bottom:-20vw;right:-16vw;background:radial-gradient(circle,rgba(236,72,153,.22),transparent 65%);animation:orbFloat 32s var(--ease-out) infinite alternate-reverse}
-.orb-core{width:30vw;height:30vw;top:34vh;left:52vw;background:radial-gradient(circle,rgba(167,139,250,.20),transparent 65%);animation:orbFloat 38s var(--ease-out) infinite alternate}
-
-@keyframes orbFloat{
-  from{transform:translate3d(0,0,0) scale(1)}
-  to{transform:translate3d(6vw,4vh,0) scale(1.12)}
-}
-
-.fog{
-  position:absolute;
-  left:-40%;
-  width:180%;
-  height:56vh;
-  filter:blur(64px);
-  mix-blend-mode:screen;
-  will-change:transform;
-}
-.fog-a{
-  bottom:-20vh;
-  background:radial-gradient(50% 50% at 50% 50%,rgba(109,40,217,.20),transparent 70%);
-  animation:fogDrift 46s var(--ease) infinite alternate;
-}
-.fog-b{
-  bottom:-30vh;
-  animation:fogDrift 64s var(--ease) infinite alternate-reverse;
-  background:radial-gradient(42% 50% at 50% 50%,rgba(236,72,153,.13),transparent 70%);
-}
-
-@keyframes fogDrift{
-  from{transform:translate3d(-4%,0,0)}
-  to{transform:translate3d(6%,0,0)}
-}
-
-/* зерно плёнки - только фиксированный слой */
-.grain{
-  position:fixed;
-  inset:-2px;
-  z-index:60;
-  pointer-events:none;
-  opacity:.05;
-  mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.vignette{
-  position:fixed;
-  inset:0;
-  z-index:-2;
-  pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%);
-}
-
-#souls{position:fixed;inset:0;z-index:-1;pointer-events:none}
-
-.progress-bar{
-  position:fixed;
-  top:0;left:0;
-  height:3px;
-  width:100%;
-  z-index:70;
-  transform-origin:left;
-  transform:scaleX(0);
-  background:var(--grad-rose);
-  box-shadow:0 0 12px rgba(236,72,153,.6);
-}
-
-/* ---------- прелоадер ---------- */
-
-#loader{
-  position:fixed;inset:0;z-index:100;
-  display:grid;place-items:center;
-  background:var(--bg);
-  transition:opacity .7s var(--ease),visibility .7s;
-}
-#loader.done{opacity:0;visibility:hidden}
-.loader-mark{
-  width:72px;height:72px;
-  border-radius:1.25rem;
-  display:grid;place-items:center;
-  background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(236,72,153,.18));
-  border:1px solid var(--hair-strong);
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.14),0 0 50px rgba(139,92,246,.4);
-  animation:loaderPulse 1.6s var(--ease) infinite;
-}
-.loader-mark svg{width:34px;height:34px}
-@keyframes loaderPulse{
-  0%,100%{transform:scale(1);box-shadow:inset 0 1px 1px rgba(255,255,255,.14),0 0 30px rgba(139,92,246,.35)}
-  50%{transform:scale(1.08);box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 0 70px rgba(236,72,153,.55)}
-}
-
-/* ---------- утилиты интерфейса ---------- */
-
-.container{
-  width:min(1200px,100% - clamp(32px,6vw,80px));
-  margin-inline:auto;
-}
-
-.eyebrow{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:8px 18px;
-  border-radius:999px;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-  backdrop-filter:blur(12px);
-  font-family:var(--font-mono);
-  font-size:11px;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--violet-soft);
-}
-.eyebrow::before{
-  content:"";
-  width:6px;height:6px;
-  border-radius:50%;
-  background:var(--grad-rose);
-  box-shadow:0 0 10px rgba(236,72,153,.8);
-}
-
-.section{position:relative;padding-block:var(--section-pad)}
-.section-head{max-width:680px;margin-bottom:clamp(40px,6vh,70px)}
-.section-head .eyebrow{margin-bottom:22px}
-.section-head p.lead{margin-top:18px;color:var(--muted);font-weight:300;font-size:clamp(1rem,1.4vw,1.15rem)}
-
-.grad-text{
-  background:var(--grad-main);
-  -webkit-background-clip:text;background-clip:text;
-  color:transparent;
-}
-
-/* ---------- кнопки ---------- */
-
-.btn{
-  position:relative;
-  display:inline-flex;align-items:center;gap:14px;
-  padding:15px 16px 15px 30px;
-  border-radius:999px;
-  font-weight:600;
-  font-size:15px;
-  letter-spacing:.02em;
-  transition:transform .5s var(--ease),box-shadow .5s var(--ease),border-color .5s var(--ease),background .5s var(--ease);
-  will-change:transform;
-}
-.btn:active{transform:scale(.97)}
-
-.btn-primary{
-  color:#fff;
-  background:linear-gradient(135deg,var(--purple) 0%,var(--rose) 100%);
-  box-shadow:0 8px 32px rgba(139,92,246,.35),inset 0 1px 1px rgba(255,255,255,.25);
-}
-.btn-primary:hover{
-  transform:translateY(-2px);
-  box-shadow:0 14px 44px rgba(236,72,153,.45),inset 0 1px 1px rgba(255,255,255,.25);
-}
-
-.btn-ghost{
-  color:var(--white);
-  border:1px solid var(--hair-strong);
-  background:var(--surface-1);
-  backdrop-filter:blur(12px);
-}
-.btn-ghost:hover{
-  border-color:rgba(167,139,250,.5);
-  background:var(--surface-2);
-  transform:translateY(-2px);
-  box-shadow:0 10px 30px rgba(109,40,217,.25);
-}
-
-.btn .btn-ico{
-  width:42px;height:42px;
-  border-radius:50%;
-  display:grid;place-items:center;
-  flex-shrink:0;
-  transition:transform .5s var(--ease);
-}
-.btn-ico svg{width:18px;height:18px}
-.btn-primary .btn-ico{background:rgba(255,255,255,.22);box-shadow:inset 0 1px 1px rgba(255,255,255,.3)}
-.btn-ghost .btn-ico{background:rgba(255,255,255,.08);border:1px solid var(--hair)}
-.btn:hover .btn-ico{transform:translate(2px,-2px) scale(1.06)}
-
-/* ---------- навбар ---------- */
-
-.nav{
-  position:fixed;
-  top:22px;left:0;right:0;
-  z-index:50;
-  display:flex;justify-content:center;
-  padding-inline:20px;
-}
-.nav-bar{
-  display:flex;align-items:center;gap:8px;
-  padding:8px 10px 8px 16px;
-  width:100%;
-  max-width:min(1120px,100%);
-  border-radius:999px;
-  border:1px solid var(--hair);
-  background:rgba(10,9,18,.55);
-  backdrop-filter:blur(18px);
-  transition:background .5s var(--ease),border-color .5s var(--ease),box-shadow .5s var(--ease);
-}
-.nav.scrolled .nav-bar{
-  background:rgba(10,9,18,.82);
-  border-color:rgba(167,139,250,.2);
-  box-shadow:0 12px 40px rgba(0,0,0,.45);
-}
-
-.brand{
-  display:flex;align-items:center;gap:12px;
-  font-family:var(--font-display);
-  font-weight:900;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--white);
-  font-size:15px;
-}
-.brand-mark{
-  width:38px;height:38px;
-  border-radius:12px;
-  display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--purple),var(--rose));
-  box-shadow:0 0 22px rgba(139,92,246,.5),inset 0 1px 1px rgba(255,255,255,.3);
-}
-.brand-mark svg{width:20px;height:20px;color:#fff}
-
-.nav-links{display:flex;gap:4px;margin-left:auto;align-items:center}
-.nav-links a{
-  padding:10px 16px;
-  border-radius:999px;
-  font-size:14px;
-  font-weight:500;
-  color:var(--muted);
-  transition:color .4s var(--ease),background .4s var(--ease);
-}
-.nav-links a:hover{color:var(--white);background:var(--surface-1)}
-
-.nav-discord{margin-left:8px;padding:10px 22px;border-radius:999px;font-weight:600;font-size:14px;color:#fff;background:linear-gradient(135deg,var(--purple),var(--rose));box-shadow:0 6px 24px rgba(139,92,246,.35);transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
-.nav-discord:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(236,72,153,.45)}
-
-.hamburger{
-  display:none;
-  width:46px;height:46px;
-  border-radius:50%;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-  position:relative;
-  margin-left:8px;
-}
-.hamburger span{
-  position:absolute;
-  left:50%;
-  width:18px;height:2px;
-  background:var(--white);
-  border-radius:2px;
-  transform:translateX(-50%);
-  transition:transform .5s var(--ease),opacity .4s var(--ease),top .5s var(--ease);
-}
-.hamburger span:nth-child(1){top:calc(50% - 7px)}
-.hamburger span:nth-child(2){top:50%}
-.hamburger span:nth-child(3){top:calc(50% + 7px)}
-body.menu-open .hamburger span:nth-child(1){transform:translate(-50%,3px) rotate(45deg)}
-body.menu-open .hamburger span:nth-child(2){opacity:0}
-body.menu-open .hamburger span:nth-child(3){transform:translate(-50%,-3px) rotate(-45deg)}
-
-/* ---------- мобильное меню ---------- */
-
-.menu{
-  position:fixed;inset:0;z-index:49;
-  display:flex;flex-direction:column;
-  justify-content:center;align-items:center;
-  gap:8px;
-  background:rgba(8,8,15,.88);
-  backdrop-filter:blur(26px);
-  opacity:0;visibility:hidden;
-  transition:opacity .5s var(--ease),visibility .5s;
-}
-body.menu-open .menu{opacity:1;visibility:visible}
-.m-link{
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:clamp(1.6rem,6vw,2.4rem);
-  text-transform:uppercase;
-  letter-spacing:.1em;
-  color:var(--white);
-  padding:10px 26px;
-  opacity:0;
-  transform:translateY(26px);
-  transition:opacity .7s var(--ease),transform .7s var(--ease),color .4s;
-}
-.m-link:hover{color:var(--pink-glow)}
-body.menu-open .m-link{opacity:1;transform:none}
-body.menu-open .m-link:nth-child(1){transition-delay:.12s}
-body.menu-open .m-link:nth-child(2){transition-delay:.18s}
-body.menu-open .m-link:nth-child(3){transition-delay:.24s}
-body.menu-open .m-link:nth-child(4){transition-delay:.30s}
-.menu .menu-cta{margin-top:22px;opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease) .38s,transform .7s var(--ease) .38s}
-body.menu-open .menu .menu-cta{opacity:1;transform:none}
-
-/* ---------- hero ---------- */
-
-.hero{
-  position:relative;
-  min-height:100dvh;
-  display:flex;flex-direction:column;
-  justify-content:center;
-  padding-top:140px;
-  padding-bottom:70px;
-  overflow:hidden;
-}
-
-.hero-skyline{
-  position:absolute;
-  left:0;right:0;bottom:-2px;
-  width:100%;
-  z-index:-1;
-  opacity:.5;
-  color:#160b33;
-}
-.hero-skyline svg{width:100%;height:auto}
-
-.hero-content{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center}
-
-.hero-title{
-  font-size:clamp(3.2rem,13vw,9.5rem);
-  font-weight:900;
-  line-height:1;
-  margin-top:34px;
-  letter-spacing:.02em;
-}
-.hero-title .grad-text{
-  background:linear-gradient(180deg,#fff 0%,#d9c8ff 30%,#a78bfa 55%,#8b5cf6 74%,#ec4899 100%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 34px rgba(139,92,246,.35));
-}
-
-.hero-sub{
-  margin-top:26px;
-  max-width:640px;
-  font-weight:300;
-  color:var(--muted);
-  font-size:clamp(1rem,1.5vw,1.2rem);
-}
-.hero-sub strong{color:var(--white);font-weight:600}
-
-.hero-ip{
-  margin-top:38px;
-  display:flex;align-items:center;gap:8px;
-  padding:8px 8px 8px 26px;
-  border-radius:999px;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-  backdrop-filter:blur(14px);
-  transition:border-color .5s var(--ease),box-shadow .5s var(--ease);
-}
-.hero-ip:hover{border-color:rgba(167,139,250,.45);box-shadow:0 0 0 1px rgba(139,92,246,.15),0 10px 34px rgba(109,40,217,.22)}
-.hero-ip .dot{
-  width:9px;height:9px;border-radius:50%;
-  background:var(--rose);
-  box-shadow:0 0 12px rgba(236,72,153,.9);
-  animation:dotPulse 2.4s var(--ease) infinite;
-}
-@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.35}}
-.hero-ip .ip-text{
-  font-family:var(--font-mono);
-  font-size:15px;
-  letter-spacing:.04em;
-  color:var(--white);
-}
-.hero-ip .ip-copy{
-  width:44px;height:44px;
-  border-radius:50%;
-  display:grid;place-items:center;
-  background:var(--surface-2);
-  border:1px solid var(--hair);
-  transition:transform .5s var(--ease),background .5s var(--ease),box-shadow .5s var(--ease);
-}
-.hero-ip .ip-copy:hover{background:var(--grad-rose);box-shadow:0 6px 20px rgba(236,72,153,.5);transform:scale(1.05)}
-.hero-ip .ip-copy svg{width:17px;height:17px}
-
-.hero-actions{
-  margin-top:22px;
-  display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
-}
-
-.hero-facts{
-  margin-top:56px;
-  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
-}
-.fact{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:11px 20px;
-  border-radius:999px;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-  font-family:var(--font-mono);
-  font-size:11.5px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-}
-.fact svg{width:15px;height:15px;color:var(--violet-soft)}
-
-.hero-cue{
-  position:absolute;
-  left:50%;bottom:26px;
-  transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:10px;
-  color:var(--muted);
-  font-family:var(--font-mono);
-  font-size:10px;
-  letter-spacing:.3em;
-  text-transform:uppercase;
-}
-.hero-cue .line{
-  width:1px;height:46px;
-  background:linear-gradient(180deg,var(--violet-soft),transparent);
-  animation:cueDrop 2.2s var(--ease) infinite;
-  transform-origin:top;
-}
-@keyframes cueDrop{0%{transform:scaleY(0);opacity:0}40%{opacity:1}100%{transform:scaleY(1);opacity:0}}
-
-/* ---------- атмосфера ---------- */
-
-.atmo-grid{
-  display:grid;gap:20px;
-  grid-template-columns:repeat(12,1fr);
-  align-items:stretch;
-}
-.atmo-text{
-  grid-column:1/6;
-  display:flex;flex-direction:column;justify-content:center;
-  padding-right:clamp(0px,2vw,32px);
-}
-.atmo-text h2{font-size:clamp(2rem,3.4vw,3rem)}
-.atmo-text p{margin-top:20px;color:var(--muted);font-weight:300}
-.atmo-cards{
-  grid-column:6/13;
-  display:grid;gap:20px;
-}
-.atmo-card .shell{
-  padding:8px;
-  border-radius:calc(var(--radius-xl) + 8px);
-  background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
-  border:1px solid var(--hair);
-}
-.atmo-card .inner{
-  padding:32px;
-  border-radius:var(--radius-xl);
-  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.14);
-  border:1px solid rgba(255,255,255,.04);
-  min-height:150px;
-}
-.atmo-card h3{
-  display:flex;align-items:center;gap:14px;
-  font-size:1.15rem;
-  margin-bottom:12px;
-}
-.atmo-card .card-ico{
-  width:44px;height:44px;
-  flex-shrink:0;
-  border-radius:14px;
-  display:grid;place-items:center;
-  background:var(--surface-2);
-  border:1px solid var(--hair);
-  color:var(--violet-soft);
-}
-.atmo-card .card-ico svg{width:20px;height:20px}
-.atmo-card p{color:var(--muted);font-weight:300;font-size:.98rem}
-.atmo-card p strong{color:var(--white);font-weight:600}
-
-/* ---------- ранги ---------- */
-
-.filter-row{
-  display:flex;gap:10px;flex-wrap:wrap;
-  margin-top:6px;
-}
-.filter-btn{
-  padding:11px 22px;
-  border-radius:999px;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-  color:var(--muted);
-  font-size:13.5px;
-  font-weight:500;
-  transition:color .5s var(--ease),border-color .5s var(--ease),background .5s var(--ease),box-shadow .5s var(--ease);
-}
-.filter-btn:hover{color:var(--white);border-color:rgba(167,139,250,.4)}
-.filter-btn.active{
-  color:#fff;
-  border-color:transparent;
-  background:linear-gradient(135deg,var(--purple),var(--rose));
-  box-shadow:0 8px 26px rgba(139,92,246,.35);
-}
-
-.rank-group-title{
-  display:flex;align-items:center;gap:18px;
-  margin-top:64px;margin-bottom:28px;
-}
-.rank-group-title h3{font-size:clamp(1.3rem,2.4vw,1.8rem);letter-spacing:.06em}
-.rank-group-title .note{font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:7px 16px;border:1px solid var(--hair);border-radius:999px;white-space:nowrap}
-
-/* лестница времени */
-
-.ladder{display:flex;align-items:stretch;gap:14px}
-.ladder .card{flex:1;min-width:0}
-.ladder-sep{
-  display:flex;align-items:center;
-  color:rgba(167,139,250,.5);
-  flex-shrink:0;
-}
-.ladder-sep svg{width:22px;height:22px}
-.ladder .card .rank-step{
-  font-family:var(--font-mono);
-  font-size:11px;letter-spacing:.2em;color:var(--muted);
-  margin-bottom:10px;
-}
-
-/* карточка ранга - двойная оболочка */
-
-.rank-card .shell{
-  position:relative;
-  padding:7px;
-  border-radius:calc(var(--radius-lg) + 8px);
-  background:linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.02) 45%);
-  border:1px solid var(--hair);
-  overflow:hidden;
-  transition:transform .6s var(--ease),box-shadow .6s var(--ease),border-color .6s var(--ease);
-  height:100%;
-}
-.rank-card .shell::before{
-  content:"";
-  position:absolute;inset:-1px;
-  background:linear-gradient(135deg,rgba(255,255,255,.22),transparent 38%,transparent 62%,rgba(236,72,153,.18));
-  opacity:0;
-  transition:opacity .6s var(--ease);
-  pointer-events:none;
-}
-.rank-card:hover .shell{transform:translateY(-5px);border-color:var(--hair-strong);box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 40px rgba(109,40,217,.15)}
-.rank-card:hover .shell::before{opacity:1}
-.rank-card .inner{
-  position:relative;
-  border-radius:var(--radius-lg);
-  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.13);
-  border:1px solid rgba(255,255,255,.05);
-  padding:28px;
-  height:100%;
-  display:flex;flex-direction:column;
-}
-.rank-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.rank-ico{
-  width:48px;height:48px;
-  border-radius:15px;
-  display:grid;place-items:center;
-  background:var(--surface-2);
-  border:1px solid var(--hair);
-  color:var(--ac,#a78bfa);
-  box-shadow:0 0 24px rgba(139,92,246,.18);
-  box-shadow:0 0 24px color-mix(in srgb,var(--ac,var(--purple)) 25%,transparent);
-}
-.rank-ico svg{width:22px;height:22px}
-.rank-code{
-  font-family:var(--font-mono);
-  font-size:11.5px;
-  letter-spacing:.16em;
-  text-transform:lowercase;
-  color:var(--muted);
-  border:1px solid var(--hair);
-  border-radius:999px;
-  padding:6px 12px;
-  background:var(--surface-1);
-}
-.rank-name{
-  margin-top:20px;
-  font-size:1.35rem;
-  letter-spacing:.04em;
-  color:var(--white);
-}
-.rank-desc{margin-top:10px;color:var(--muted);font-weight:300;font-size:.95rem;flex-grow:1}
-.rank-tag{
-  margin-top:18px;
-  align-self:flex-start;
-  font-family:var(--font-mono);
-  font-size:10.5px;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--ac,#a78bfa);
-  border:1px solid rgba(167,139,250,.4);
-  background:rgba(167,139,250,.1);
-  border:1px solid color-mix(in srgb,var(--ac,#a78bfa) 40%,transparent);
-  background:color-mix(in srgb,var(--ac,#a78bfa) 10%,transparent);
-  border-radius:999px;
-  padding:7px 14px;
-}
-
-/* карточка featured (admin) */
-.rank-card.featured .inner{
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-}
-.rank-card.featured .rank-ico{
-  width:64px;height:64px;border-radius:20px;
-}
-.rank-card.featured .rank-ico svg{width:30px;height:30px}
-.rank-card.featured .rank-name{font-size:1.8rem;margin-top:22px}
-.rank-card.featured .rank-code{order:-1}
-.rank-card.featured .rank-desc{max-width:330px}
-.rank-card.featured .rank-tag{align-self:center}
-
-/* bento для по заслугам */
-.bento{
-  display:grid;
-  grid-template-columns:repeat(12,1fr);
-  gap:16px;
-}
-.bento .c-admin{grid-column:span 6;grid-row:span 2}
-.bento .c-jradmin{grid-column:span 6}
-.bento .c-mod{grid-column:span 6}
-.bento .c-helper{grid-column:span 6}
-.bento .c-builder{grid-column:span 6}
-
-/* ---------- как попасть ---------- */
-
-.steps{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:20px;
-  counter-reset:step;
-}
-.step .shell{
-  padding:7px;
-  border-radius:calc(var(--radius-xl) + 8px);
-  height:100%;
-  background:linear-gradient(150deg,rgba(255,255,255,.08),rgba(255,255,255,.015));
-  border:1px solid var(--hair);
-}
-.step .inner{
-  padding:34px;
-  border-radius:var(--radius-xl);
-  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.12);
-  border:1px solid rgba(255,255,255,.04);
-  height:100%;
-  display:flex;flex-direction:column;
-}
-.step-num{
-  font-family:var(--font-display);
-  font-weight:900;
-  font-size:1.1rem;
-  letter-spacing:.14em;
-  width:54px;height:54px;
-  border-radius:18px;
-  display:grid;place-items:center;
-  color:var(--white);
-  background:linear-gradient(135deg,var(--purple),var(--rose));
-  box-shadow:0 10px 30px rgba(139,92,246,.4),inset 0 1px 1px rgba(255,255,255,.3);
-  margin-bottom:26px;
-}
-.step h3{font-size:1.3rem;color:var(--white);margin-bottom:12px}
-.step p{color:var(--muted);font-weight:300;font-size:.97rem}
-.step p code{
-  font-family:var(--font-mono);
-  font-size:.88em;
-  color:var(--violet-soft);
-  background:var(--surface-1);
-  border:1px solid var(--hair);
-  padding:2px 8px;
-  border-radius:8px;
-}
-
-/* ---------- финальный призыв ---------- */
-
-.cta .cta-shell{
-  position:relative;
-  padding:9px;
-  border-radius:calc(var(--radius-xl) + 12px);
-  background:linear-gradient(140deg,rgba(255,255,255,.20),rgba(255,255,255,.03) 40%,rgba(236,72,153,.25));
-  border:1px solid rgba(167,139,250,.3);
-  overflow:hidden;
-}
-.cta .cta-shell::before{
-  content:"";
-  position:absolute;inset:0;
-  background:radial-gradient(60% 60% at 50% 0%,rgba(139,92,246,.22),transparent 70%);
-  pointer-events:none;
-}
-.cta .cta-inner{
-  position:relative;
-  border-radius:var(--radius-xl);
-  background:linear-gradient(180deg,var(--bg-soft),rgba(13,13,26,.6));
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.12);
-  padding:clamp(48px,8vw,90px) clamp(24px,6vw,80px);
-  text-align:center;
-  display:flex;flex-direction:column;align-items:center;
-  overflow:hidden;
-}
-.cta .cta-inner::after{
-  content:"";
-  position:absolute;inset:0;
-  background-image:radial-gradient(rgba(167,139,250,.16) 1px,transparent 1px);
-  background-size:26px 26px;
-  opacity:.5;
-  pointer-events:none;
-  -webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000,transparent);
-  mask-image:radial-gradient(70% 70% at 50% 50%,#000,transparent);
-}
-.cta h2{font-size:clamp(2rem,5vw,3.6rem);max-width:720px}
-.cta .cta-desc{margin-top:20px;max-width:520px;color:var(--muted);font-weight:300}
-.cta .cta-actions{margin-top:38px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-
-/* ---------- футер ---------- */
-
-.footer{
-  border-top:1px solid var(--hair);
-  background:linear-gradient(180deg,transparent,rgba(13,13,26,.7));
-  padding:64px 0 40px;
-  position:relative;
-  overflow:hidden;
-}
-.footer-grid{
-  display:grid;
-  grid-template-columns:1.6fr 1fr 1fr;
-  gap:48px;
-}
-.footer h4{font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
-.footer .brand{font-size:18px}
-.footer .brand-desc{margin-top:16px;color:var(--muted);font-weight:300;font-size:.93rem;max-width:300px}
-.footer-links{display:flex;flex-direction:column;gap:10px}
-.footer-links a{color:var(--muted);font-size:.93rem;transition:color .4s var(--ease),transform .4s var(--ease);width:fit-content}
-.footer-links a:hover{color:var(--pink-glow);transform:translateX(3px)}
-.footer .footer-ip{
-  display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--font-mono);
-  font-size:13px;letter-spacing:.05em;
-  color:var(--white);
-  padding:12px 18px;
-  border-radius:14px;
-  border:1px solid var(--hair);
-  background:var(--surface-1);
-}
-.footer .footer-ip .dot{width:8px;height:8px;border-radius:50%;background:var(--rose);box-shadow:0 0 10px rgba(236,72,153,.8)}
-.footer-bottom{
-  margin-top:56px;padding-top:26px;
-  border-top:1px solid var(--hair);
-  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  font-size:.82rem;color:var(--muted);
-}
-
-/* ---------- тост ---------- */
-
-.toast{
-  position:fixed;
-  left:50%;bottom:28px;
-  z-index:80;
-  transform:translate(-50%,80px);
-  opacity:0;
-  padding:14px 28px;
-  border-radius:999px;
-  background:rgba(13,13,26,.9);
-  border:1px solid rgba(167,139,250,.4);
-  box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 30px rgba(139,92,246,.25);
-  color:var(--white);
-  font-size:14px;
-  font-weight:500;
-  backdrop-filter:blur(14px);
-  display:flex;align-items:center;gap:12px;
-  transition:transform .6s var(--ease),opacity .6s var(--ease);
-  pointer-events:none;
-}
-.toast.show{transform:translate(-50%,0);opacity:1}
-.toast svg{width:17px;height:17px;color:var(--pink-glow)}
-
-/* ---------- скролл-появление ---------- */
-
-.rv{
-  opacity:0;
-  transform:translateY(30px);
-  filter:blur(8px);
-  transition:opacity .9s var(--ease),transform .9s var(--ease),filter .9s var(--ease);
-}
-.rv.in{opacity:1;transform:none;filter:none}
-[data-rd="1"]{transition-delay:.08s}
-[data-rd="2"]{transition-delay:.16s}
-[data-rd="3"]{transition-delay:.24s}
-[data-rd="4"]{transition-delay:.32s}
-
-[hidden]{display:none!important}
-
-/* ---------- адаптив ---------- */
-
-@media (max-width:1024px){
-  .atmo-text{grid-column:1/13}
-  .atmo-cards{grid-column:1/13;margin-top:8px}
-}
-
-@media (max-width:960px){
-  .nav-links, .nav-discord{display:none}
-  .hamburger{display:block}
-  .ladder{flex-direction:column;position:relative}
-  .ladder-sep{transform:rotate(90deg);margin:2px auto}
-  .bento .c-admin{grid-column:span 12;grid-row:auto}
-  .bento .c-jradmin,.bento .c-mod,.bento .c-helper,.bento .c-builder{grid-column:span 12}
-  .steps{grid-template-columns:1fr}
-  .footer-grid{grid-template-columns:1fr;gap:40px}
-}
-
-@media (max-width:720px){
-  .hero{padding-top:120px}
-  .hero-title{font-size:clamp(2.7rem,16vw,4.6rem)}
-  .hero-ip{width:100%;justify-content:space-between}
-  .hero-ip .ip-text{font-size:13px}
-  .hero-actions{flex-direction:column;width:100%;align-items:stretch}
-  .hero-actions .btn{justify-content:space-between;width:100%}
-  .rank-group-title{flex-direction:column;align-items:flex-start;gap:10px}
-  .filter-row{width:100%}
-  .filter-btn{flex:1;text-align:center}
-  .cta .cta-actions{flex-direction:column;width:100%}
-  .cta .cta-actions .btn{justify-content:space-between;width:100%}
-  .footer-bottom{flex-direction:column;text-align:center;align-items:center}
-}
-
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{
-    animation-duration:.01ms!important;
-    animation-iteration-count:1!important;
-    transition-duration:.01ms!important;
-    scroll-behavior:auto!important;
-  }
-  .rv{opacity:1;transform:none;filter:none}
-  .orb,.fog{animation:none}
-  #souls{display:none}
-}
-</style>
-<noscript><style>.rv{opacity:1;transform:none;filter:none}</style></noscript>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoidLumina - приватный ванильный сервер Minecraft 26.2</title>
+  <meta name="description" content="VoidLumina - приватный ванильный сервер на версии 26.2. Идёт набор игроков: могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.">
+  <meta name="theme-color" content="#111111">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:title" content="VoidLumina - приватный ванильный сервер 26.2">
+  <meta property="og:description" content="Сервер ещё не открыт. Идёт набор игроков: могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.">
+  <link rel="icon" href="favicon64.jpg" type="image/jpeg" sizes="64x64">
+  <link rel="icon" href="favicon512.jpg" type="image/jpeg" sizes="512x512">
+  <link rel="apple-touch-icon" href="favicon180.jpg">
+
+  <link rel="preload" as="image" href="photo.jpg" fetchpriority="high">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
+
 <body>
+  <a class="skip" href="#main">Перейти к содержимому</a>
 
-<!-- ============ НАСТРОЙКА ============
-     Адрес сервера:  VoidLumina.joinserver.ru (span #serverIp + константа SERVER_IP в скрипте)
-     Discord:        https://discord.gg/ycwmjVQ2Wa (константа DISCORD_URL в скрипте,
-                     ссылки .js-discord подтягиваются автоматически)
-     Версия:         Minecraft 26.2
-     Создатель:      fgarto
-===================================== -->
+  <!-- Обводочная иконкария, viewBox 24x24, stroke-first: красим обводку,
+       заливка на всех символах отключена в style.css. -->
+  <svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-pick" viewBox="0 0 24 24">
+      <path d="M13 8l-9.383 9.418a2.091 2.091 0 0 0 0 2.967a2.11 2.11 0 0 0 2.976 0l9.407 -9.385"/>
+      <path d="M9 3h4.586a1 1 0 0 1 .707 .293l6.414 6.414a1 1 0 0 1 .293 .707v4.586a2 2 0 1 1 -4 0v-3l-5 -5h-3a2 2 0 1 1 0 -4"/>
+    </symbol>
+    <symbol id="i-skull" viewBox="0 0 24 24">
+      <path d="M12 3a8 8 0 0 0-8 8v1.6a5 5 0 0 0 2 4v2.4h12v-2.4a5 5 0 0 0 2-4V11a8 8 0 0 0-8-8Z"/>
+      <path d="M9.5 10.6h.01"/>
+      <path d="M14.5 10.6h.01"/>
+      <path d="M10 19v2M14 19v2"/>
+    </symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24">
+      <path d="M9 5.5a3 3 0 0 1 6 0V11a3 3 0 0 1-6 0Z"/>
+      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/>
+      <path d="M12 18v3M9 21h6"/>
+    </symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M8.5 14a4.5 4.5 0 0 0 7 0"/>
+      <path d="M9 10h.01"/>
+      <path d="M15 10h.01"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3l7.5 3.2v5.4c0 4.4-3.1 8.3-7.5 9.9c-4.4-1.6-7.5-5.5-7.5-9.9V6.2Z"/>
+      <path d="M9.4 11.6l1.9 1.9l3.4-3.6"/>
+    </symbol>
+    <symbol id="i-mountains" viewBox="0 0 24 24">
+      <path d="M3 19.5h18"/>
+      <path d="M7 19.5l5-11l3.5 7.5L18 11l3 8.5"/>
+    </symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24">
+      <path d="M3 12V5a2 2 0 0 1 2-2h7l9 9l-9 9Z"/>
+      <path d="M7.5 7.5h.01"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M7 17L17 7"/>
+      <path d="M8.5 7H17v8.5"/>
+    </symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24">
+      <path d="M5 9l7 7l7 -7"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <path d="M4 8h16M4 16h16"/>
+    </symbol>
+  </svg>
 
-<div id="loader" aria-hidden="true">
-  <div class="loader-mark">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" fill="url(#g-loader)"/><defs><linearGradient id="g-loader" x1="5" y1="3" x2="19" y2="17"><stop stop-color="#fff"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs></svg>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="hdr">
+    <div class="hdr-in">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true"><img src="favicon180.jpg" alt="" width="34" height="34"></span>
+        VoidLumina
+      </a>
+
+      <nav class="hdr-links" aria-label="Основная навигация">
+        <a href="#features">Фишки</a>
+        <a href="#how">Как попасть</a>
+        <a href="#faq">Вопросы</a>
+      </nav>
+
+      <a class="btn btn--primary hdr-cta" href="#discord">Вступить</a>
+
+      <button class="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="menu">
+        <svg aria-hidden="true"><use href="#i-list"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="menu" id="menu" data-open="false">
+    <nav class="menu-list" aria-label="Мобильная навигация">
+      <a href="#features">Фишки</a>
+      <a href="#how">Как попасть</a>
+      <a href="#faq">Вопросы</a>
+      <a href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a>
+    </nav>
+    <p class="menu-foot">Сервер ещё не открыт</p>
   </div>
-</div>
 
-<div class="progress-bar" id="progress"></div>
-
-<!-- фоновые слои -->
-<div class="layer" aria-hidden="true">
-  <div class="layer-in">
-    <div class="orb orb-violet"></div>
-    <div class="orb orb-rose"></div>
-    <div class="orb orb-core"></div>
-  </div>
-  <div class="layer-in">
-    <div class="fog fog-a"></div>
-    <div class="fog fog-b"></div>
-  </div>
-</div>
-<canvas id="souls" aria-hidden="true"></canvas>
-<div class="vignette" aria-hidden="true"></div>
-<div class="grain" aria-hidden="true"></div>
-
-<!-- скрытый спрайт иконок -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <symbol id="i-discord" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z"/>
-    </symbol>
-    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="9" y="9" width="11" height="11" rx="2.4"/><path d="M5 14.5H4.6A1.6 1.6 0 0 1 3 12.9V4.6A1.6 1.6 0 0 1 4.6 3h8.3a1.6 1.6 0 0 1 1.6 1.6V5"/><path d="M15 10h.01"/>
-    </symbol>
-    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 17L17 7M9 7h8v8"/>
-    </symbol>
-    <symbol id="i-grave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 21h12M6 20V9a6 6 0 0 1 12 0v11"/><path d="M12 13v5M9.5 15.5h5"/>
-    </symbol>
-    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 14.5A8.2 8.2 0 1 1 9.5 4a7.2 7.2 0 0 0 10.5 10.5Z"/><path d="M18 8.5h.01M19.5 11h.01"/>
-    </symbol>
-    <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="8.5"/><path d="M15.8 8.2l-1.9 5-5 1.9 1.9-5 5-1.9Z"/>
-    </symbol>
-    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 11l8-6.5L20 11"/><path d="M6 9.8V20h12V9.8"/><path d="M10 20v-5h4v5"/>
-    </symbol>
-    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="8" cy="15" r="4"/><path d="M11.5 11.5L20 3M16 7l3 3M14 9l2 2"/>
-    </symbol>
-    <symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 8l3.2 2.6L12 5l4.8 5.6L20 8l-1.4 11H5.4L4 8Z"/><path d="M7 15h10"/>
-    </symbol>
-    <symbol id="i-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 17L17 3l4 4L7 21l-4-4Z"/><path d="M8.5 15l1.7 1.7M11 12.5l1.9 1.9M14 9.5l2.1 2.1"/>
-    </symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 3l7 3v6c0 4.2-3 7.2-7 9-4-1.8-7-4.8-7-9V6l7-3Z"/><path d="M12 8v6M9 11h6"/>
-    </symbol>
-    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M12 15v3"/>
-    </symbol>
-    <symbol id="i-craft" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M5 5h6v6H5zM13.5 5h5.5v5.5h-5.5z"/><path d="M14.5 14.5h7M17.5 11.5l3 3-3 3"/>
-    </symbol>
-    <symbol id="i-sword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M15 4l5 5L8.5 20.5 3.5 15.5 15 4Z"/><path d="M10 10l4 4"/><path d="M7.5 21.5l-4 .5.5-4"/>
-    </symbol>
-    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>
-    </symbol>
-    <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/>
-    </symbol>
-    <symbol id="i-gem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 4h12l3 5.5-9 11.5L3 9.5 6 4Z"/><path d="M3 9.5h18M8.5 9.5L12 21M15.5 9.5L12 21M8.5 4l1.2 5.5M15.5 4l-1.2 5.5"/>
-    </symbol>
-    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4.5 12.5l5 5 10-11"/>
-    </symbol>
-    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M9 6l6 6-6 6"/>
-    </symbol>
-  </defs>
-</svg>
-
-<!-- навбар -->
-<nav class="nav" id="nav" aria-label="Основная навигация">
-  <div class="nav-bar">
-    <a class="brand" href="#top">
-      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" fill="currentColor"/></svg></span>
-      VoidLumina
-    </a>
-    <div class="nav-links">
-      <a href="#atmosphere">О сервере</a>
-      <a href="#ranks">Ранги</a>
-      <a href="#join">Как попасть</a>
-    </div>
-    <a class="nav-discord js-discord" href="https://discord.gg/ycwmjVQ2Wa" target="_blank" rel="noopener">Discord</a>
-    <button class="hamburger" id="hamburger" aria-label="Открыть меню" aria-expanded="false" aria-controls="menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
-
-<div class="menu" id="menu" aria-hidden="true">
-  <a class="m-link" href="#atmosphere">О сервере</a>
-  <a class="m-link" href="#ranks">Ранги</a>
-  <a class="m-link" href="#join">Как попасть</a>
-  <a class="m-link js-discord" href="https://discord.gg/ycwmjVQ2Wa" target="_blank" rel="noopener">Discord</a>
-  <div class="menu-cta">
-    <button class="btn btn-primary" data-copy-ip>
-      Скопировать адрес
-      <span class="btn-ico"><svg><use href="#i-arrow"/></svg></span>
-    </button>
-  </div>
-</div>
-
-<main id="top">
-
-  <!-- ============ HERO ============ -->
-  <section class="hero">
-    <div class="container hero-content">
-      <span class="eyebrow rv">Dark Fantasy Survival - Minecraft 26.2</span>
-
-      <h1 class="hero-title rv" data-rd="1">
-        <span class="grad-text">VoidLumina</span>
-      </h1>
-
-      <p class="hero-sub rv" data-rd="2">
-        Мир, где <strong>умирает свет</strong>. Фиолетовые сумерки, могилы погибших и путь,
-        который начинается с первого шага в темноту. Проведи время в игре, строй и
-        поднимайся по ранговой лестнице - от Путника до Ветерана.
-      </p>
-
-      <div class="hero-ip rv" data-rd="3">
-        <span class="dot" aria-hidden="true"></span>
-        <span class="ip-text" id="serverIp">VoidLumina.joinserver.ru</span>
-        <button class="ip-copy" data-copy-ip aria-label="Скопировать адрес сервера">
-          <svg><use href="#i-copy"/></svg>
-        </button>
+  <main id="main">
+    <!-- ------------------------------------------------------- Hero -->
+    <section class="hero" id="top">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="photo.jpg" width="1920" height="1080" alt="" fetchpriority="high">
       </div>
+      <div class="hero-scrim" aria-hidden="true"></div>
 
-      <div class="hero-actions rv" data-rd="4">
-        <button class="btn btn-primary" data-copy-ip>
-          Войти на сервер
-          <span class="btn-ico"><svg><use href="#i-arrow"/></svg></span>
-        </button>
-        <a class="btn btn-ghost js-discord" href="https://discord.gg/ycwmjVQ2Wa" target="_blank" rel="noopener">
-          Вступить в Discord
-          <span class="btn-ico"><svg><use href="#i-discord"/></svg></span>
-        </a>
-      </div>
+      <div class="shell hero-in">
+        <div class="hero-txt">
+          <p class="status"><span class="status-dot" aria-hidden="true"></span>Набор игроков</p>
 
-      <div class="hero-facts rv" data-rd="4">
-        <span class="fact"><svg><use href="#i-badge"/></svg>9 рангов</span>
-        <span class="fact"><svg><use href="#i-moon"/></svg>Тёмное фэнтези</span>
-        <span class="fact"><svg><use href="#i-discord"/></svg>Набор в Discord</span>
-      </div>
-    </div>
+          <h1>VoidLumina - приватный ванильный сервер</h1>
 
-    <div class="hero-skyline" aria-hidden="true">
-      <svg viewBox="0 0 1440 220" preserveAspectRatio="none">
-        <path fill="currentColor" d="M0 220 V170 L55 150 L75 175 L105 120 L130 172 L160 140 L185 172 L225 95 L255 160 L290 135 L325 175 L360 115 L395 170 L430 150 L465 180 L510 108 L545 168 L580 120 L615 172 L655 150 L685 168 L730 90 L765 158 L800 130 L835 175 L880 112 L915 168 L950 150 L985 180 L1030 100 L1065 160 L1100 130 L1140 174 L1170 150 L1215 88 L1250 156 L1285 118 L1320 168 L1365 105 L1400 160 L1440 150 V220 Z"/>
-        <path fill="currentColor" opacity="0.75" d="M0 220 V186 L90 168 L130 188 L170 158 L215 186 L260 118 L300 174 L345 150 L390 184 L440 138 L480 176 L525 152 L575 184 L620 160 L660 186 L710 130 L755 172 L800 148 L845 184 L890 138 L940 176 L985 160 L1030 188 L1080 128 L1125 172 L1170 150 L1215 186 L1265 130 L1310 170 L1360 148 L1440 172 V220 Z"/>
-      </svg>
-    </div>
+          <p class="hero-sub" data-hero-sub>Идёт набор игроков. Могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.</p>
 
-    <div class="hero-cue" aria-hidden="true">
-      <span>свиток</span>
-      <span class="line"></span>
-    </div>
-  </section>
-
-  <!-- ============ О СЕРВЕРЕ ============ -->
-  <section class="section" id="atmosphere">
-    <div class="container">
-      <div class="atmo-grid">
-        <div class="atmo-text">
-          <span class="eyebrow rv">О сервере</span>
-          <h2 class="rv" data-rd="1">Что ждёт тебя <span class="grad-text">на сервере</span></h2>
-          <p class="rv" data-rd="2">
-            Помимо антуража у VoidLumina есть и механики: защищай свою территорию приватами,
-            собирай предметы по кастомным крафтам и выковывай собственный меч, которого нет
-            в ванильной игре.
-          </p>
-        </div>
-        <div class="atmo-cards">
-          <article class="atmo-card rv" data-rd="1">
-            <div class="shell"><div class="inner">
-              <h3><span class="card-ico"><svg><use href="#i-grave"/></svg></span>Могилы погибших</h3>
-              <p>Мрачный антураж вписан в мир: кладбища и могильные плиты хранят память павших игроков и напоминают о мрачной стилистике сервера.</p>
-            </div></div>
-          </article>
-          <article class="atmo-card rv" data-rd="2">
-            <div class="shell"><div class="inner">
-              <h3><span class="card-ico"><svg><use href="#i-lock"/></svg></span>Приваты</h3>
-              <p>Защити свою территорию. Обозначь участок приватом и не бойся оставлять постройки без присмотра - чужие руки туда не дотянутся.</p>
-            </div></div>
-          </article>
-          <article class="atmo-card rv" data-rd="3">
-            <div class="shell"><div class="inner">
-              <h3><span class="card-ico"><svg><use href="#i-craft"/></svg></span>Кастомные крафты</h3>
-              <p>Рецепты, которых нет в ванильной игре. Кастомные крафты открывают предметы и механики, недоступные в обычном майнкрафте.</p>
-            </div></div>
-          </article>
-          <article class="atmo-card rv" data-rd="4">
-            <div class="shell"><div class="inner">
-              <h3><span class="card-ico"><svg><use href="#i-sword"/></svg></span>Кастомный меч</h3>
-              <p>Легендарное оружие, которое не выпадет из моба и не найдётся в сундуке. Собери кастомный меч по особому рецепту - и куй своё оружие сам.</p>
-            </div></div>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ РАНГИ ============ -->
-  <section class="section" id="ranks">
-    <div class="container">
-      <div class="section-head">
-        <span class="eyebrow rv">Ранги</span>
-        <h2 class="rv" data-rd="1">Титулы, которые <span class="grad-text">здесь зарабатывают</span></h2>
-        <p class="lead rv" data-rd="2">
-          Часть рангов выдаётся за время, проведённое в игре, часть - за вклад в проект и заслуги.
-          Административный состав набирается только через Discord.
-        </p>
-        <div class="filter-row rv" data-rd="3" role="group" aria-label="Фильтр рангов">
-          <button class="filter-btn active" data-filter="all">Все</button>
-          <button class="filter-btn" data-filter="time">По времени в игре</button>
-          <button class="filter-btn" data-filter="merit">По заслугам и команда</button>
-        </div>
-      </div>
-
-      <!-- лестница: ранги по времени -->
-      <div id="ladderBlock">
-        <div class="rank-group-title rv">
-          <h3>Ранговая лестница</h3>
-          <span class="note">выдаются за время в игре</span>
-        </div>
-        <div class="ladder">
-
-          <article class="rank-card rv" style="--ac:#9aa5d1" data-rd="1">
-            <div class="shell"><div class="inner">
-              <div class="rank-step">01</div>
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#9aa5d1"><svg><use href="#i-compass"/></svg></span>
-                <span class="rank-code">traveler</span>
-              </div>
-              <h3 class="rank-name">Путник</h3>
-              <p class="rank-desc">Первый титул на пути. Выдаётся за время, проведённое в игре.</p>
-              <span class="rank-tag">время в игре</span>
-            </div></div>
-          </article>
-
-          <div class="ladder-sep rv" data-rd="2" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
-
-          <article class="rank-card rv" style="--ac:#b794f6" data-rd="2">
-            <div class="shell"><div class="inner">
-              <div class="rank-step">02</div>
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#b794f6"><svg><use href="#i-home"/></svg></span>
-                <span class="rank-code">citizen</span>
-              </div>
-              <h3 class="rank-name">Обыватель</h3>
-              <p class="rank-desc">Второй шаг по лестнице. Тоже достаётся временем на сервере.</p>
-              <span class="rank-tag">время в игре</span>
-            </div></div>
-          </article>
-
-          <div class="ladder-sep rv" data-rd="3" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
-
-          <article class="rank-card rv" style="--ac:#a78bfa" data-rd="3">
-            <div class="shell"><div class="inner">
-              <div class="rank-step">03</div>
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#a78bfa"><svg><use href="#i-key"/></svg></span>
-                <span class="rank-code">vip</span>
-              </div>
-              <h3 class="rank-name">VIP</h3>
-              <p class="rank-desc">Привилегированная ступень. Выдаётся за время, проведённое в игре.</p>
-              <span class="rank-tag">время в игре</span>
-            </div></div>
-          </article>
-
-          <div class="ladder-sep rv" data-rd="4" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
-
-          <article class="rank-card rv" style="--ac:#ffffff" data-rd="4">
-            <div class="shell"><div class="inner">
-              <div class="rank-step">04</div>
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#ffffff"><svg><use href="#i-crown"/></svg></span>
-                <span class="rank-code">veteran</span>
-              </div>
-              <h3 class="rank-name">Ветеран</h3>
-              <p class="rank-desc">Вершина ранговой лестницы. Достаётся тем, кто прожил на сервере больше всех.</p>
-              <span class="rank-tag">время в игре</span>
-            </div></div>
-          </article>
-
-        </div>
-      </div>
-
-      <!-- bento: заслуги и команда -->
-      <div id="meritBlock">
-        <div class="rank-group-title rv">
-          <h3>По заслугам и в команду</h3>
-          <span class="note">набор в Discord</span>
-        </div>
-        <div class="bento">
-
-          <article class="rank-card featured c-admin rv" style="--ac:#c4b5fd" data-rd="1">
-            <div class="shell"><div class="inner">
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#ffffff"><svg><use href="#i-gem"/></svg></span>
-                <span class="rank-code">admin</span>
-              </div>
-              <h3 class="rank-name grad-text">Админ</h3>
-              <p class="rank-desc">Управляет сервером и проектом. Доверие, которое нужно заслужить. Набор только через Discord.</p>
-              <span class="rank-tag">команды</span>
-            </div></div>
-          </article>
-
-          <article class="rank-card c-jradmin rv" style="--ac:#a78bfa" data-rd="2">
-            <div class="shell"><div class="inner">
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#a78bfa"><svg><use href="#i-badge"/></svg></span>
-                <span class="rank-code">jradmin</span>
-              </div>
-              <h3 class="rank-name">Мл. Админ</h3>
-              <p class="rank-desc">Вступает в административный состав. Набор только через Discord канал.</p>
-              <span class="rank-tag">Discord</span>
-            </div></div>
-          </article>
-
-          <article class="rank-card c-mod rv" style="--ac:#8b5cf6" data-rd="3">
-            <div class="shell"><div class="inner">
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#8b5cf6"><svg><use href="#i-eye"/></svg></span>
-                <span class="rank-code">mod</span>
-              </div>
-              <h3 class="rank-name">Модер</h3>
-              <p class="rank-desc">Следит за порядком и помогает игрокам. Набор только через Discord.</p>
-              <span class="rank-tag">Discord</span>
-            </div></div>
-          </article>
-
-          <article class="rank-card c-helper rv" style="--ac:#f0abfc" data-rd="4">
-            <div class="shell"><div class="inner">
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#f0abfc"><svg><use href="#i-shield"/></svg></span>
-                <span class="rank-code">helper</span>
-              </div>
-              <h3 class="rank-name">Хелпер</h3>
-              <p class="rank-desc">Выдаётся за важную роль на сервере: помощь игрокам и поддержку сообщества.</p>
-              <span class="rank-tag">по заслугам</span>
-            </div></div>
-          </article>
-
-          <article class="rank-card c-builder rv" style="--ac:#ec4899" data-rd="4">
-            <div class="shell"><div class="inner">
-              <div class="rank-top">
-                <span class="rank-ico" style="--ac:#ec4899"><svg><use href="#i-ruler"/></svg></span>
-                <span class="rank-code">builder</span>
-              </div>
-              <h3 class="rank-name">Строитель</h3>
-              <p class="rank-desc">Выдаётся за отличные постройки в сторону проекта и просто за красивые строения на сервере.</p>
-              <span class="rank-tag">по заслугам</span>
-            </div></div>
-          </article>
-
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ============ КАК ПОПАСТЬ ============ -->
-  <section class="section" id="join">
-    <div class="container">
-      <div class="section-head">
-        <span class="eyebrow rv">Как попасть</span>
-        <h2 class="rv" data-rd="1">Три шага до мира <span class="grad-text">во тьме</span></h2>
-      </div>
-
-      <div class="steps">
-        <article class="step rv" data-rd="1">
-          <div class="shell"><div class="inner">
-            <span class="step-num">I</span>
-            <h3>Скопируй адрес</h3>
-            <p>Одна кнопка ниже - и адрес <code>VoidLumina.joinserver.ru</code> уже в буфере обмена.</p>
-          </div></div>
-        </article>
-        <article class="step rv" data-rd="2">
-          <div class="shell"><div class="inner">
-            <span class="step-num">II</span>
-            <h3>Зайди в игру</h3>
-            <p>Подключайся через версию <code>Minecraft 26.2</code>. Вход занимает секунды.</p>
-          </div></div>
-        </article>
-        <article class="step rv" data-rd="3">
-          <div class="shell"><div class="inner">
-            <span class="step-num">III</span>
-            <h3>Выбирай путь</h3>
-            <p>Копи время в игре, строй и двигайся по лестнице - от Путника до Ветерана.</p>
-          </div></div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ ФИНАЛЬНЫЙ ПРИЗЫВ ============ -->
-  <section class="section cta">
-    <div class="container">
-      <div class="cta-shell rv">
-        <div class="cta-inner">
-          <span class="eyebrow" style="position:relative">Присоединяйся</span>
-          <h2 class="grad-text rv" data-rd="1" style="margin-top:26px">Твоя душа уже выбрала этот мир</h2>
-          <p class="cta-desc rv" data-rd="2">
-            Вступай в Discord, заходи на сервер и становись частью истории, которую пишут игроки.
-            Мрак принимает всех - надо лишь сделать первый шаг.
-          </p>
-          <div class="cta-actions rv" data-rd="3">
-            <button class="btn btn-primary" data-copy-ip>
-              VoidLumina.joinserver.ru
-              <span class="btn-ico"><svg><use href="#i-copy"/></svg></span>
-            </button>
-            <a class="btn btn-ghost js-discord" href="https://discord.gg/ycwmjVQ2Wa" target="_blank" rel="noopener">
-              Наш Discord
-              <span class="btn-ico"><svg><use href="#i-discord"/></svg></span>
+          <div class="hero-cta">
+            <a class="btn btn--primary" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">
+              Вступить в Discord
+              <span class="btn-ico" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
             </a>
+            <a class="btn btn--ghost" href="#features">Что будет на сервере</a>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ============ ФУТЕР ============ -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div>
-          <a class="brand" href="#top">
-            <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" fill="currentColor"/></svg></span>
-            VoidLumina
-          </a>
-          <p class="brand-desc">Тёмное фэнтези выживание. Фиолетовые сумерки, могилы погибших и ранги, которые зарабатывают временем и заслугами.</p>
-        </div>
-        <div>
-          <h4>Навигация</h4>
-          <div class="footer-links">
-            <a href="#atmosphere">О сервере</a>
-            <a href="#ranks">Ранги</a>
-            <a href="#join">Как попасть</a>
-            <a class="js-discord" href="https://discord.gg/ycwmjVQ2Wa" target="_blank" rel="noopener">Discord</a>
+        <figure class="hero-art float">
+          <img src="photo2.jpg" alt="Скриншот будущего мира VoidLumina" width="470" height="545" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Параметры -->
+    <section class="band" aria-label="Параметры сервера">
+      <div class="shell">
+        <div class="facts rv">
+          <div class="fact tint">
+            <b>26.2</b>
+            <span>Версия</span>
           </div>
-        </div>
-        <div>
-          <h4>Сервер</h4>
-          <span class="footer-ip"><span class="dot" aria-hidden="true"></span>VoidLumina.joinserver.ru</span>
-          <div class="footer-links" style="margin-top:16px">
-            <a href="#" data-copy-ip>Скопировать адрес</a>
-            <a href="#ranks">Список рангов</a>
+          <div class="fact tint">
+            <b>Vanilla+</b>
+            <span>Режим</span>
+          </div>
+          <div class="fact tint">
+            <b>2</b>
+            <span>Мода на клиенте</span>
           </div>
         </div>
       </div>
-      <div class="footer-bottom">
-        <span>© 2026 VoidLumina. Создатель проекта - fgarto.</span>
-        <span>Не аффилирован с Mojang Studios и Microsoft.</span>
+    </section>
+
+    <!-- ------------------------------------------------------- Фишки -->
+    <section class="band" id="features">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Что будет на сервере</h2>
+          <p>Обычная ванилла плюс детали, которых нет на типичных серверах. Всё это включим в день открытия.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card tint span-5 row-2 rv" style="--i:0">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-pick"/></svg></span>
+            <h3>Кирка - как альпийский топорик</h3>
+            <p>Кирка работает как альпийский топорик - так удобнее карабкаться по горам и льду, и выглядит она именно так, как задумано.</p>
+          </article>
+
+          <article class="card tint span-4 rv" style="--i:1">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-skull"/></svg></span>
+            <h3>Могилы</h3>
+            <p>Умер - не потерял. Вещи остаются в могиле, и ты всегда можешь вернуться, чтобы забрать их.</p>
+          </article>
+
+          <article class="card tint span-3 rv" style="--i:2">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
+            <h3>Голосовой чат</h3>
+            <p>Говори с игроками прямо в игре через Simple Voice Chat. Никаких сторонних приложений и голосового в Discord.</p>
+          </article>
+
+          <article class="card tint span-3 rv" style="--i:3">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-smile"/></svg></span>
+            <h3>Эмоции</h3>
+            <p>Покажи радость, злость или удивление через EmoteCraft - один из двух модов, которые нужны для входа.</p>
+          </article>
+
+          <article class="card card--deep tint span-4 rv" style="--i:4">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-shield"/></svg></span>
+            <h3>Жители-стражи</h3>
+            <p>Жители выглядят как игроки и умеют защищаться. Не заходи в их деревню с плохими намерениями.</p>
+          </article>
+
+          <article class="card tint span-5 rv" style="--i:5">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-mountains"/></svg></span>
+            <h3>Своя генерация</h3>
+            <p>Мир генерируется по своим правилам - не по ванильным.</p>
+          </article>
+
+          <article class="card card--accent card--split tint span-7 rv" id="prefixes" style="--i:6">
+            <div>
+              <span class="card-ico" aria-hidden="true"><svg><use href="#i-tag"/></svg></span>
+              <h3>Кастомные префиксы</h3>
+              <p>Цветной префикс перед ником - в TAB, в табло и в чате.</p>
+            </div>
+            <p class="card-note">
+              Напиши в <a class="link" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a> - выдадим нужный.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Как попасть -->
+    <section class="band" id="how">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Как попасть в первых</h2>
+        </div>
+
+        <ol class="steps">
+          <li class="step tint rv" style="--i:0">
+            <span class="step-n" aria-hidden="true">01</span>
+            <div>
+              <h3>Вступи в Discord</h3>
+              <p>Подключаться пока некуда - сервер ещё не запущен. Discord остаётся единственным местом, где мы пишем новости.</p>
+            </div>
+          </li>
+          <li class="step tint rv" style="--i:1">
+            <span class="step-n" aria-hidden="true">02</span>
+            <div>
+              <h3>Следи за анонсом</h3>
+              <p>Как только мы наберём достаточно игроков, в Discord появится дата открытия и адрес сервера.</p>
+            </div>
+          </li>
+          <li class="step tint rv" style="--i:2">
+            <span class="step-n" aria-hidden="true">03</span>
+            <div>
+              <h3>Заходи первым</h3>
+              <p>Кто будет в Discord в день открытия - попадёт в первых. Перед запуском поставь два мода на клиент, подробности выдадим в Discord.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Вопросы -->
+    <section class="band" id="faq">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Вопросы и ответы</h2>
+        </div>
+
+        <div class="faq">
+          <div class="faq-row tint rv" style="--i:0">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-0" aria-expanded="false" aria-controls="faq-a-0">
+                <span>Нужны ли моды?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-0" role="region" aria-labelledby="faq-q-0">
+              <div class="faq-a-in">
+                <p>Да, всего два. EmoteCraft - эмоции, Simple Voice Chat - голос рядом с игроком. Ставятся на клиент, серверную часть мы ставим сами.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:1">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-1" aria-expanded="false" aria-controls="faq-a-1">
+                <span>Нужна ли лицензия для входа?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-1" role="region" aria-labelledby="faq-q-1">
+              <div class="faq-a-in">
+                <p>Нет, лицензия не обязательна. Можно заходить и с пиратской версии.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:2">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-2" aria-expanded="false" aria-controls="faq-a-2">
+                <span>Можно ли зайти с Bedrock?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-2" role="region" aria-labelledby="faq-q-2">
+              <div class="faq-a-in">
+                <p>Нет, с Bedrock зайти не получится. Сервер только для Java.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:3">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-3" aria-expanded="false" aria-controls="faq-a-3">
+                <span>Какая версия сервера?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-3" role="region" aria-labelledby="faq-q-3">
+              <div class="faq-a-in">
+                <p>26.2. Стандартный клиент Minecraft, из модов - только два.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:4">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-4" aria-expanded="false" aria-controls="faq-a-4">
+                <span>Какое ядро сервера?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-4" role="region" aria-labelledby="faq-q-4">
+              <div class="faq-a-in">
+                <p>Paper. Плагины свои, ванильные механики не ломаем.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:5">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-5" aria-expanded="false" aria-controls="faq-a-5">
+                <span>Нужны ли приваты?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-5" role="region" aria-labelledby="faq-q-5">
+              <div class="faq-a-in">
+                <p>Нет. Всё открыто, а защита строится на могилах и ручном сговоре.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:6">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-6" aria-expanded="false" aria-controls="faq-a-6">
+                <span>Кого вы ждёте на сервере?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-6" role="region" aria-labelledby="faq-q-6">
+              <div class="faq-a-in">
+                <p>Мы набираем тех, кому интересна спокойная ванилла: кто-то строит своё, кто-то общается с другими, кто-то исследует мир. Таких людей мы и ищем - без гриферства, спама и хамства в чате.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:7">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-7" aria-expanded="false" aria-controls="faq-a-7">
+                <span>Где узнать о фишках подробнее?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-7" role="region" aria-labelledby="faq-q-7">
+              <div class="faq-a-in">
+                <p>В Discord. Там же мы выдаём префиксы и пишем дату открытия.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:8">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-8" aria-expanded="false" aria-controls="faq-a-8">
+                <span>Когда сервер откроется?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-8" role="region" aria-labelledby="faq-q-8">
+              <div class="faq-a-in">
+                <p>Точной даты пока нет. Ориентируемся на набор игроков, чтобы открыться сразу с полным онлайном.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Discord -->
+    <section class="band band--discord" id="discord">
+      <div class="shell">
+        <div class="discord-card rv">
+          <div>
+            <h2>Заходи в наш Discord</h2>
+            <p>Новости сервера, дата открытия, адрес подключения и выдача префиксов - всё в одном месте.</p>
+          </div>
+          <a class="btn btn--primary" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">
+            Открыть Discord
+            <span class="btn-ico" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="shell">
+      <div class="foot-grid">
+        <div class="foot-col">
+          <h2>Используемые ресурспаки</h2>
+          <ul class="credits">
+            <li>
+              <span class="credits-name">Mars's Enchanted Book Textures</span>
+              <span class="credits-desc">MIT</span>
+            </li>
+            <li>
+              <span class="credits-name">RAY's 3D Rails <span class="credits-ver">v3.6</span></span>
+              <span class="credits-desc">от xR4YM0ND, MIT</span>
+            </li>
+            <li>
+              <span class="credits-name">Better Leaves <span class="credits-ver">v9.6</span></span>
+              <span class="credits-desc">от Motschen &amp; TeamMidnightDust, MIT</span>
+            </li>
+          </ul>
+          <p class="foot-note">Все права на оригинальные текстуры и модели принадлежат их авторам. Проекты используются в ознакомительных целях на бесплатной основе.</p>
+        </div>
+
+        <div class="foot-col">
+          <h2>VoidLumina</h2>
+          <ul class="foot-links">
+            <li><a href="#features">Фишки</a></li>
+            <li><a href="#how">Как попасть</a></li>
+            <li><a href="#faq">Вопросы</a></li>
+            <li><a href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot-in">
+        <p>VoidLumina</p>
+        <p>Сервер ещё не открыт</p>
       </div>
     </div>
   </footer>
-
-</main>
-
-<div class="toast" id="toast" role="status" aria-live="polite">
-  <svg><use href="#i-check"/></svg>
-  <span id="toastText">Скопировано</span>
-</div>
-
-<script>
-(function(){
-  'use strict';
-
-  var SERVER_IP = 'VoidLumina.joinserver.ru';
-  var DISCORD_URL = 'https://discord.gg/ycwmjVQ2Wa';
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  /* ---------- прелоадер ---------- */
-  var loader = document.getElementById('loader');
-  window.addEventListener('load', function(){
-    setTimeout(function(){ loader.classList.add('done'); }, 350);
-  });
-  setTimeout(function(){ loader.classList.add('done'); }, 3000);
-
-  /* ---------- прогресс-бар ---------- */
-  var progress = document.getElementById('progress');
-  var ticking = false;
-  function onScroll(){
-    if(ticking) return;
-    ticking = true;
-    requestAnimationFrame(function(){
-      var st = document.documentElement.scrollTop || document.body.scrollTop;
-      var dh = document.documentElement.scrollHeight - window.innerHeight;
-      var p = dh > 0 ? st / dh : 0;
-      progress.style.transform = 'scaleX(' + p + ')';
-      document.getElementById('nav').classList.toggle('scrolled', st > 40);
-      ticking = false;
-    });
-  }
-  window.addEventListener('scroll', onScroll, {passive:true});
-  onScroll();
-
-  /* ---------- копирование адреса ---------- */
-  var toast = document.getElementById('toast');
-  var toastText = document.getElementById('toastText');
-  var toastTimer = null;
-  function showToast(msg){
-    toastText.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 2200);
-  }
-  function copyFallback(){
-    var ta = document.createElement('textarea');
-    ta.value = SERVER_IP;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try{ document.execCommand('copy'); }catch(e){}
-    document.body.removeChild(ta);
-  }
-  document.querySelectorAll('[data-copy-ip]').forEach(function(btn){
-    btn.addEventListener('click', function(e){
-      if(btn.tagName === 'A') e.preventDefault();
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(SERVER_IP).then(function(){
-          showToast('Адрес скопирован в буфер');
-        }).catch(copyFallback);
-      }else{
-        copyFallback();
-        showToast('Адрес скопирован в буфер');
-      }
-    });
-  });
-
-  /* ---------- Discord ---------- */
-  document.querySelectorAll('.js-discord').forEach(function(a){
-    a.setAttribute('href', DISCORD_URL);
-  });
-
-  /* ---------- мобильное меню ---------- */
-  var burger = document.getElementById('hamburger');
-  var menu = document.getElementById('menu');
-  function closeMenu(){
-    document.body.classList.remove('menu-open');
-    burger.setAttribute('aria-expanded','false');
-    menu.setAttribute('aria-hidden','true');
-  }
-  burger.addEventListener('click', function(){
-    var open = document.body.classList.toggle('menu-open');
-    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    menu.setAttribute('aria-hidden', open ? 'false' : 'true');
-  });
-  menu.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click', closeMenu);
-  });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') closeMenu();
-  });
-
-  /* ---------- скролл-появление ---------- */
-  var revealEls = document.querySelectorAll('.rv');
-  if('IntersectionObserver' in window && !reduced){
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if(entry.isIntersecting){
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      });
-    }, {rootMargin:'0px 0px -12% 0px', threshold:0.08});
-    revealEls.forEach(function(el){ io.observe(el); });
-  }else{
-    revealEls.forEach(function(el){ el.classList.add('in'); });
-  }
-
-  /* ---------- фильтр рангов ---------- */
-  var ladder = document.getElementById('ladderBlock');
-  var merit = document.getElementById('meritBlock');
-  document.querySelectorAll('.filter-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      var f = btn.getAttribute('data-filter');
-      ladder.hidden = (f === 'merit');
-      merit.hidden = (f === 'time');
-    });
-  });
-
-  /* ---------- души: частицы на канвасе ---------- */
-  var canvas = document.getElementById('souls');
-  var ctx = canvas.getContext('2d');
-  var particles = [];
-  var W, H, dpr;
-  var COLORS = [
-    '139,92,246',
-    '167,139,250',
-    '236,72,153',
-    '240,171,252'
-  ];
-  function resize(){
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.width = Math.floor(window.innerWidth * dpr);
-    H = canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-  }
-  function makeParticle(randomY){
-    return {
-      x: Math.random() * W,
-      y: randomY ? Math.random() * H : H + 20,
-      r: (Math.random() * 1.7 + 0.5) * dpr,
-      vy: (Math.random() * 0.35 + 0.12) * dpr,
-      phi: Math.random() * Math.PI * 2,
-      sway: (Math.random() * 0.5 + 0.2) * dpr,
-      tw: Math.random() * Math.PI * 2,
-      c: COLORS[Math.floor(Math.random() * COLORS.length)],
-      a: Math.random() * 0.5 + 0.15
-    };
-  }
-  function init(){
-    resize();
-    var count = Math.min(90, Math.max(40, Math.floor(window.innerWidth / 18)));
-    particles = [];
-    for(var i = 0; i < count; i++) particles.push(makeParticle(true));
-  }
-  var t0 = performance.now();
-  function draw(now){
-    ctx.clearRect(0, 0, W, H);
-    var t = (now - t0) / 1000;
-    for(var i = 0; i < particles.length; i++){
-      var p = particles[i];
-      p.y -= p.vy;
-      p.x += Math.sin(t * 0.6 + p.phi) * p.sway * 0.3;
-      if(p.y < -30 || p.x < -30 || p.x > W + 30){
-        particles[i] = makeParticle(false);
-        continue;
-      }
-      var alpha = p.a * (0.55 + 0.45 * Math.sin(t * 1.4 + p.tw));
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + p.c + ',' + alpha.toFixed(3) + ')';
-      ctx.shadowColor = 'rgba(' + p.c + ',0.8)';
-      ctx.shadowBlur = p.r * 6;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-    if(!reduced) requestAnimationFrame(draw);
-  }
-  function start(){
-    init();
-    if(!reduced) requestAnimationFrame(draw);
-  }
-  var resizeTimer = null;
-  window.addEventListener('resize', function(){
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function(){
-      resize();
-      if(reduced) return;
-      for(var i = particles.length; i < Math.max(40, Math.floor(window.innerWidth / 18)); i++){
-        particles.push(makeParticle(true));
-      }
-      particles.length = Math.min(particles.length, Math.max(40, Math.floor(window.innerWidth / 18)));
-    }, 150);
-  });
-  document.addEventListener('visibilitychange', function(){
-    /* пауза не нужна: канвас сам доживает кадры при скрытой вкладке */
-  });
-  start();
-
-})();
-</script>
 </body>
 </html>
