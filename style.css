@@ -1,0 +1,859 @@
+/* ============================================================
+   VoidLumina - дизайн-система по референсу foxward
+   Токены: canvas #1f1f1f, поверхность #0d0c0c, акцент #d9534fd9.
+   Радиусы: 8 / 12 / 16 / 32 / 50. Движение: 200/300/400/900мс,
+   кривая cubic-bezier(0.16, 1, 0.3, 1). Заголовки только в
+   предложном регистре - uppercase нигде не используется.
+   ============================================================ */
+
+:root {
+  --bg: #111111;
+  --canvas: #1f1f1f;
+  --surface: #0d0c0c;
+  --text: #ffffff;
+  --text-2: #c5c5c5;
+  --text-muted: #ffffffcc;
+  --accent: #d9534fd9;
+  --primary: #e62222;
+  --primary-rgb: 230, 34, 34;
+  --red-dark: #ff6868;
+  --border: #ffffff0d;
+  --border-mid: #424242;
+  --dim: #797979;
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-bg-strong: rgba(255, 255, 255, 0.08);
+
+  --r-tag: 8px;
+  --r-sm: 12px;
+  --r-btn: 16px;
+  --r-card: 16px;
+  --r-xl: 32px;
+  --r-round: 50%;
+
+  --d-fast: 200ms;
+  --d-base: 300ms;
+  --d-mod: 400ms;
+  --d-slow: 900ms;
+  --ease: cubic-bezier(0.16, 1.00, 0.30, 1.00);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1.00);
+
+  --shell: 1340px;
+  --pad: clamp(20px, 4vw, 60px);
+  --band-y: clamp(80px, 8vw, 152px);
+  --nav-h: 106px;
+
+  --fs-display: clamp(2.1rem, 5.4vw, 3.375rem);
+  --fs-heading-lg: clamp(1.65rem, 3.2vw, 1.9375rem);
+  --fs-heading: clamp(1.4rem, 2.6vw, 1.6875rem);
+  --fs-heading-sm: clamp(1.3rem, 2.4vw, 1.5625rem);
+  --fs-sub: clamp(1.15rem, 2.2vw, 1.4375rem);
+  --fs-body: clamp(0.95rem, 1.6vw, 1.25rem);
+  --fs-small: clamp(0.85rem, 1.3vw, 1rem);
+  --fs-caption: clamp(0.8rem, 1.05vw, 0.875rem);
+
+  --shadow-lg: rgba(13, 12, 12, 0.2) 0 5px 5px 0;
+  --shadow-xl: rgba(0, 0, 0, 0.2) 0 8px 32px 0;
+
+  --z-header: 8;
+  --z-menu: 10;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  /* якоря не должны уезжать под фиксированный хедер */
+  scroll-padding-top: calc(var(--nav-h) + 24px);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img,
+svg { display: block; max-width: 100%; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--d-fast) ease;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+:focus-visible {
+  outline: 2px solid rgba(var(--primary-rgb), 0.35);
+  outline-offset: 3px;
+  border-radius: var(--r-tag);
+}
+
+::selection { background: var(--primary); color: #fff; }
+
+.skip {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 20;
+  padding: 12px 20px;
+  background: #fff;
+  color: #000;
+  border-radius: var(--r-sm);
+  transition: top var(--d-fast) var(--ease);
+}
+.skip:focus { top: 16px; }
+
+.shell {
+  width: 100%;
+  max-width: var(--shell);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+/* Зерно держим fixed: иначе непрерывный ре-пайнт по всей странице
+   съедает мобильный FPS. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Иконки обводочные: заливку гасим на уровне спрайта, иначе
+   currentColor красит форму, а не линию. */
+.sprite { position: absolute; fill: none; }
+.sprite symbol,
+.sprite symbol * { fill: none; }
+
+.card-ico svg,
+.step-n,
+.burger svg,
+.faq-chev,
+.btn-ico svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------------------------------------------------------- Кнопки */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 25px;
+  border-radius: var(--r-btn);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: all 0.5s var(--ease-bounce);
+}
+
+.btn-ico {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  transition: transform 0.5s var(--ease-bounce);
+}
+.btn-ico svg { width: 24px; height: 24px; }
+
+.btn--primary {
+  background: #fff;
+  color: #000;
+  box-shadow: var(--shadow-lg);
+}
+.btn--primary:hover {
+  box-shadow: rgba(255, 255, 255, 0.35) 0 0 30px;
+  transform: scale(1.03) translateY(-4px);
+}
+.btn--primary:hover .btn-ico { transform: translate(2px, -2px); }
+.btn--primary:active {
+  box-shadow: rgba(255, 255, 255, 0.25) 0 0 15px;
+  transform: scale(0.97) translateY(0);
+}
+
+.btn--ghost {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  color: var(--text);
+}
+.btn--ghost:hover { background: var(--hover-bg); }
+
+/* ---------------------------------------------------------- Хедер */
+
+.hdr {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-header);
+  background: rgba(17, 17, 17, 0.72);
+  -webkit-backdrop-filter: blur(6px) saturate(1.5) contrast(1.1);
+  backdrop-filter: blur(6px) saturate(1.5) contrast(1.1);
+  border-bottom: 1px solid var(--border);
+}
+
+.hdr-in {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: var(--shell);
+  height: var(--nav-h);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  overflow: hidden;                 /* квадратное фото иначе вылезет за круг */
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-round);
+}
+.brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+
+.hdr-links { display: none; gap: 40px; margin-inline: auto; }
+.hdr-links a { font-size: var(--fs-small); }
+.hdr-links a:hover { color: var(--primary); }
+
+.hdr-cta { display: none; margin-left: auto; }
+.hdr-cta.btn { padding: 10px 12px; font-size: var(--fs-small); }
+
+.burger {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  margin-left: auto;
+  border-radius: var(--r-round);
+  background: #181818;
+  transition: background-color var(--d-base) ease;
+}
+.burger:hover { background: var(--hover-bg-strong); }
+.burger svg { width: 24px; height: 24px; }
+
+@media (min-width: 1050px) {
+  .hdr-links { display: flex; }
+  .hdr-cta { display: inline-flex; margin-left: 0; }
+  .burger { display: none; }
+}
+
+/* ---------------------------------------------------------- Мобильное меню */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-menu);
+  display: grid;
+  align-content: center;
+  padding: 0 var(--pad);
+  background: rgba(13, 12, 12, 0.92);
+  -webkit-backdrop-filter: blur(10px) saturate(1.5);
+  backdrop-filter: blur(10px) saturate(1.5);
+  opacity: 0;
+  /* visibility переключается мгновенно при открытии и с задержкой при
+     закрытии: в общий transition его включать нельзя, в момент .focus()
+     значение ещё hidden и фокус просто не ставится. */
+  visibility: hidden;
+  transition: opacity var(--d-mod) var(--ease), visibility 0s linear var(--d-mod);
+}
+.menu[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--d-mod) var(--ease), visibility 0s;
+}
+
+.menu-list a {
+  display: block;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-heading-sm);
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: transform var(--d-slow) var(--ease), opacity var(--d-slow) var(--ease),
+    color var(--d-fast) ease;
+}
+.menu[data-open="true"] .menu-list a { opacity: 1; transform: translateY(0); }
+.menu[data-open="true"] .menu-list a:nth-child(1) { transition-delay: 60ms; }
+.menu[data-open="true"] .menu-list a:nth-child(2) { transition-delay: 120ms; }
+.menu[data-open="true"] .menu-list a:nth-child(3) { transition-delay: 180ms; }
+.menu[data-open="true"] .menu-list a:nth-child(4) { transition-delay: 240ms; }
+.menu-list a:hover { color: var(--primary); }
+
+.menu-foot {
+  margin-top: 40px;
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  color: var(--dim);
+}
+
+/* ---------------------------------------------------------- Hero */
+
+.hero {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-height: 100dvh;
+  padding-top: var(--nav-h);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--surface);
+}
+.hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.06);
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.25) 0, rgba(0, 0, 0, 0.22) 50%, rgba(0, 0, 0, 0.62) 100%),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.94) 0%, rgba(17, 17, 17, 0.5) 55%, rgba(17, 17, 17, 0.2) 100%);
+}
+
+.hero-in {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(40px, 5vw, 72px);
+  align-items: center;
+  padding-block: clamp(60px, 8vw, 120px);
+}
+
+.hero-txt { max-width: 46ch; }
+
+.hero h1 {
+  margin-bottom: 24px;
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.hero-sub {
+  margin-bottom: 36px;
+  max-width: 42ch;   /* фиксирована: подстановка числа участников из Discord
+                         иначе дёргает перенос строки */
+  color: var(--text-2);
+}
+
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Единственное место, где пиксельный шрифт оправдан: плашка статуса
+   читается как системный индикатор, а не как декорация. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-tag);
+  background: rgba(13, 12, 12, 0.6);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--red-dark);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--r-round);
+  background: var(--red-dark);
+  animation: statusPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+
+.hero-art {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  /* лёгкий наклон задаёт глубину, без него блок прилипает к сетке */
+  transform: rotate(-2deg);
+}
+.hero-art img { width: 100%; height: auto; }
+
+/* Бесконечное парение иллюстрации. Смещение несимметричное, поэтому
+   цикл не читается как шаг. */
+@keyframes floatPremium {
+  from { transform: translate3d(0, 0, 0) rotate(-2deg); }
+  25% { transform: translate3d(-6px, -8px, 0) rotate(-2.5deg); }
+  50% { transform: translate3d(4px, -16px, 0) rotate(-1.5deg); }
+  75% { transform: translate3d(8px, -6px, 0) rotate(-2.3deg); }
+  to { transform: translate3d(0, 0, 0) rotate(-2deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .float { animation: floatPremium 8s linear infinite; }
+}
+
+@media (min-width: 900px) {
+  .hero-in { grid-template-columns: 1.15fr 0.85fr; }
+}
+
+/* ---------------------------------------------------------- Секции */
+
+.band {
+  position: relative;
+  padding-block: var(--band-y);
+}
+.band--discord { padding-bottom: clamp(60px, 6vw, 100px); }
+
+.sec-head {
+  max-width: 60ch;
+  margin-bottom: clamp(40px, 5vw, 72px);
+}
+.sec-head h2 {
+  margin-bottom: 16px;
+  font-size: var(--fs-heading-lg);
+  font-weight: 500;
+  line-height: 0.99;
+  text-wrap: balance;
+}
+.sec-head p { color: var(--text-2); }
+
+/* ---------------------------------------------------------- Параметры */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.fact {
+  padding: clamp(24px, 3vw, 40px) 20px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-card);
+  background: var(--canvas);
+}
+.fact b {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--fs-heading);
+  font-weight: 400;
+}
+.fact span {
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+/* Тонировка на ховере - слой поверх собственной заливки. Менять
+   background-color напрямую нельзя: полупрозрачный белый смешается с
+   фоном страницы, а не с заливкой блока, и ховер станет еле заметным. */
+.tint {
+  position: relative;
+  overflow: hidden;
+}
+.tint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--hover-bg-strong);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-base) ease;
+}
+.tint > * { position: relative; z-index: 1; }
+
+@media (hover: hover) and (pointer: fine) {
+  .tint:hover::after { opacity: 1; }
+}
+
+/* ---------------------------------------------------------- Карточки */
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.card {
+  grid-column: span 12;
+  padding: 20px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-card);
+  background: var(--canvas);
+}
+
+.card--deep {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.card--accent {
+  border-color: var(--primary);
+  background: linear-gradient(var(--accent), rgba(217, 83, 79, 0.12));
+}
+
+.card h3 {
+  margin-bottom: 10px;
+  font-size: var(--fs-heading-sm);
+  font-weight: 400;
+  line-height: 1.1;
+}
+.card p {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  font-weight: 400;
+}
+
+.card-ico {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-sm);
+  color: var(--text);
+}
+.card-ico svg { width: 24px; height: 24px; }
+
+.card-note { color: var(--text-muted) !important; }
+
+.link { color: var(--primary); }
+.link:hover { color: var(--red-dark); }
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .card-ico { border-color: var(--accent); }
+}
+
+/* Асимметрия держится только на широких экранах: без этого ячейка 3/12
+   на телефоне схлопывается в полосу. */
+@media (min-width: 700px) {
+  .card { grid-column: span 6; }
+}
+
+@media (min-width: 1050px) {
+  .span-3 { grid-column: span 3; }
+  .span-4 { grid-column: span 4; }
+  .span-5 { grid-column: span 5; }
+  .span-7 { grid-column: span 7; }
+  .row-2 { grid-row: span 2; }
+
+  .card--split { display: grid; gap: 32px; align-items: end; }
+}
+
+@media (min-width: 1250px) {
+  .card--split { grid-template-columns: 1.4fr 1fr; gap: 40px; }
+}
+
+/* ---------------------------------------------------------- Шаги */
+
+.steps { display: grid; gap: 20px; }
+
+.step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+  padding: clamp(24px, 3vw, 36px) 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+.step-n {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--primary);
+}
+
+.step h3 {
+  margin-bottom: 10px;
+  font-size: var(--fs-heading-sm);
+  font-weight: 400;
+}
+.step p {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  font-weight: 400;
+}
+
+@media (min-width: 900px) {
+  .steps { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---------------------------------------------------------- FAQ */
+
+.faq {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+
+.faq-row { border-bottom: 1px solid var(--border); }
+
+/* Шаг каскада в FAQ вдвое короче общего: девять рядов по 90ms дали бы
+   восемьсот миллисекунд ожидания на последнем пункте. */
+.faq .faq-row { transition-delay: calc(var(--i, 0) * 45ms); }
+
+.faq-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(20px, 4vw, 48px);
+  width: 100%;
+  padding-block: clamp(26px, 3vw, 34px);
+  text-align: left;
+  font-size: var(--fs-heading);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* Стрелка уходит в правый край строки - далеко от текста вопроса,
+   чтобы её не путать с продолжением строки. */
+.faq-chev {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  color: var(--dim);
+  transition: transform var(--d-base) var(--ease), color var(--d-fast) ease;
+}
+.faq-row[data-open="true"] .faq-chev {
+  color: var(--primary);
+  transform: rotate(180deg);
+}
+
+/* Раскрытие через grid-template-rows: высоту ответа не меряем в JS,
+   поэтому быстрый повторный клик не ловит гонку по высоте. В старых
+   браузерах без поддержки переключение будет мгновенным, но рабочим. */
+.faq-a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--d-base) var(--ease);
+}
+.faq-a-in {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.faq-a-in p {
+  max-width: 70ch;
+  padding-bottom: clamp(26px, 3vw, 34px);
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--d-fast) var(--ease),
+    transform var(--d-base) var(--ease);
+}
+
+.faq-row[data-open="true"] .faq-a { grid-template-rows: 1fr; }
+.faq-row[data-open="true"] .faq-a-in p {
+  opacity: 1;
+  transform: none;
+}
+
+/* Горизонтальный отступ ответу делаем только на широких экранах:
+   вертикальный лёг бы схлопывание 0fr, горизонтальный - нет. */
+@media (min-width: 900px) {
+  .faq-a-in { padding-left: 40px; }
+}
+
+/* ---------------------------------------------------------- Discord */
+
+.discord-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: clamp(32px, 5vw, 72px);
+  border-radius: var(--r-xl);
+  background: var(--canvas) url("photo2.jpg") center / cover;
+}
+
+/* Затемнение кладём отдельным слоем: иначе поверх фото не получится
+   ровный градиент, не перекрывая текст. */
+.discord-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(0, 0, 0, 0.25) 0, rgba(0, 0, 0, 0.22) 50%, rgba(0, 0, 0, 0.72) 100%);
+}
+.discord-card > * { position: relative; }
+
+.discord-card h2 {
+  margin-bottom: 16px;
+  font-size: var(--fs-heading-lg);
+  font-weight: 500;
+  line-height: 0.99;
+  text-wrap: balance;
+}
+.discord-card p {
+  max-width: 52ch;
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+@media (min-width: 900px) {
+  .discord-card { grid-template-columns: 1.5fr auto; }
+}
+
+/* ---------------------------------------------------------- Футер */
+
+.foot {
+  padding-block: clamp(56px, 6vw, 96px) 34px;
+  border-top: 1px solid var(--border);
+}
+
+.foot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+}
+
+.foot-col h2 {
+  margin-bottom: 24px;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.credits { display: grid; gap: 16px; }
+.credits li { display: grid; gap: 4px; }
+.credits-name { font-size: var(--fs-small); font-weight: 400; }
+.credits-desc { font-size: var(--fs-caption); color: var(--text-2); font-weight: 400; }
+.credits-ver { color: var(--dim); }
+
+.foot-note {
+  max-width: 60ch;
+  margin-top: 28px;
+  font-size: var(--fs-caption);
+  color: var(--dim);
+  font-weight: 400;
+}
+
+.foot-links { display: grid; gap: 12px; }
+.foot-links a { font-size: var(--fs-small); font-weight: 400; }
+.foot-links a:hover { color: var(--primary); }
+
+.foot-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+.foot-in p {
+  font-size: var(--fs-caption);
+  color: var(--dim);
+  font-weight: 400;
+}
+
+@media (min-width: 900px) {
+  .foot-grid { grid-template-columns: 2fr 1fr; }
+}
+
+/* ---------------------------------------------------------- Появление */
+
+.rv {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity var(--d-slow) var(--ease), transform var(--d-slow) var(--ease);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.rv[data-in='true'] { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-transparency: reduce) {
+  .hdr,
+  .menu { background: var(--surface); }
+}
+
+/* ---------------------------------------------------------- Мелкие экраны */
+
+@media (max-width: 640px) {
+  .hero-sub { margin-bottom: 28px; }
+  .btn { padding: 14px 18px; }
+  .hero-cta { gap: 10px; }
+  .facts { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------- Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* мягче, чем «ноль»: остаётся прозрачность, уходит только движение */
+  .rv { transform: none; transition-delay: 0ms; }
+  .float { animation: none; transform: rotate(-2deg); }
+  .status-dot { animation: none; }
+  .menu-list a { transform: none; }
+}
