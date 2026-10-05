@@ -52,7 +52,6 @@
   --fs-caption: clamp(0.8rem, 1.05vw, 0.875rem);
 
   --shadow-lg: rgba(13, 12, 12, 0.2) 0 5px 5px 0;
-  --shadow-xl: rgba(0, 0, 0, 0.2) 0 8px 32px 0;
 
   --z-header: 8;
   --z-menu: 10;
@@ -158,6 +157,15 @@ ul, ol { list-style: none; }
   stroke-linejoin: round;
 }
 
+/* Крепер - единственная иконка, нарисованная заливкой, а не обводкой.
+   Правила выше гасят у неё и заливку, и обводку, поэтому перебиваем
+   их точечно: currentColor наследуется от <svg>, а не от символа. */
+.card-ico svg.ico-fill,
+.card-ico svg.ico-fill * {
+  fill: currentColor;
+  stroke: none;
+}
+
 /* ---------------------------------------------------------- Кнопки */
 
 .btn {
@@ -252,7 +260,7 @@ ul, ol { list-style: none; }
 
 .hdr-links { display: none; gap: 40px; margin-inline: auto; }
 .hdr-links a { font-size: var(--fs-small); }
-.hdr-links a:hover { color: var(--primary); }
+.hdr-links a:hover { color: #c06bff; }
 
 .hdr-cta { display: none; margin-left: auto; }
 .hdr-cta.btn { padding: 10px 12px; font-size: var(--fs-small); }
@@ -318,7 +326,7 @@ ul, ol { list-style: none; }
 .menu[data-open="true"] .menu-list a:nth-child(2) { transition-delay: 120ms; }
 .menu[data-open="true"] .menu-list a:nth-child(3) { transition-delay: 180ms; }
 .menu[data-open="true"] .menu-list a:nth-child(4) { transition-delay: 240ms; }
-.menu-list a:hover { color: var(--primary); }
+.menu-list a:hover { color: #c06bff; }
 
 .menu-foot {
   margin-top: 40px;
@@ -404,7 +412,7 @@ ul, ol { list-style: none; }
   font-family: 'Press Start 2P', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
-  color: var(--red-dark);
+  color: #c06bff;
 }
 
 .status-dot {
@@ -412,7 +420,7 @@ ul, ol { list-style: none; }
   height: 8px;
   flex: none;
   border-radius: var(--r-round);
-  background: var(--red-dark);
+  background: #c06bff;
   animation: statusPulse 2.4s ease-in-out infinite;
 }
 
@@ -421,30 +429,33 @@ ul, ol { list-style: none; }
   50% { opacity: 0.45; transform: scale(0.8); }
 }
 
+/* Панели нет: в исходном рендере по бокам ~230px пустого альфа-поля,
+   серая заливка просвечивала сквозь них и давала тот самый прямоугольник.
+   Файл pose-hero.png обрезан по содержимому, поэтому рамка, скругление
+   и тень тут больше нечего рисовать. */
 .hero-art {
   position: relative;
-  margin: 0;
-  border: 1px solid var(--border-mid);
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-xl);
-  /* лёгкий наклон задаёт глубину, без него блок прилипает к сетке */
-  transform: rotate(-2deg);
+  margin-inline: auto;
+  max-width: 360px;
+  aspect-ratio: 535 / 919;
 }
-.hero-art img { width: 100%; height: auto; }
+.hero-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-/* Бесконечное парение иллюстрации. Смещение несимметричное, поэтому
-   цикл не читается как шаг. */
+/* Бесконечное парение иллюстрации. Только фото, без наклона. */
 @keyframes floatPremium {
-  from { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  25% { transform: translate3d(-6px, -8px, 0) rotate(-2.5deg); }
-  50% { transform: translate3d(4px, -16px, 0) rotate(-1.5deg); }
-  75% { transform: translate3d(8px, -6px, 0) rotate(-2.3deg); }
-  to { transform: translate3d(0, 0, 0) rotate(-2deg); }
+  from { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-6px, -8px, 0); }
+  50% { transform: translate3d(4px, -16px, 0); }
+  75% { transform: translate3d(8px, -6px, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .float { animation: floatPremium 8s linear infinite; }
+  .float { animation: floatPremium 8s linear infinite; will-change: transform; }
 }
 
 @media (min-width: 900px) {
@@ -543,8 +554,8 @@ ul, ol { list-style: none; }
 }
 
 .card--accent {
-  border-color: var(--primary);
-  background: linear-gradient(var(--accent), rgba(217, 83, 79, 0.12));
+  border-color: transparent;
+  background: linear-gradient(rgba(192, 107, 255, 0.08), rgba(192, 107, 255, 0.08));
 }
 
 .card h3 {
@@ -573,8 +584,8 @@ ul, ol { list-style: none; }
 
 .card-note { color: var(--text-muted) !important; }
 
-.link { color: var(--primary); }
-.link:hover { color: var(--red-dark); }
+.link { color: #c06bff; }
+.link:hover { color: #c06bff; }
 
 @media (hover: hover) and (pointer: fine) {
   .card:hover .card-ico { border-color: var(--accent); }
@@ -619,7 +630,7 @@ ul, ol { list-style: none; }
   font-family: 'Press Start 2P', monospace;
   font-size: 0.8rem;
   line-height: 1.6;
-  color: var(--primary);
+  color: #c06bff;
 }
 
 .step h3 {
@@ -674,7 +685,7 @@ ul, ol { list-style: none; }
   transition: transform var(--d-base) var(--ease), color var(--d-fast) ease;
 }
 .faq-row[data-open="true"] .faq-chev {
-  color: var(--primary);
+  color: #c06bff;
   transform: rotate(180deg);
 }
 
@@ -725,7 +736,7 @@ ul, ol { list-style: none; }
   align-items: center;
   padding: clamp(32px, 5vw, 72px);
   border-radius: var(--r-xl);
-  background: var(--canvas) url("photo2.jpg") center / cover;
+  background: var(--canvas) url("photo.jpg") center / cover;
 }
 
 /* Затемнение кладём отдельным слоем: иначе поверх фото не получится
@@ -792,7 +803,7 @@ ul, ol { list-style: none; }
 
 .foot-links { display: grid; gap: 12px; }
 .foot-links a { font-size: var(--fs-small); font-weight: 400; }
-.foot-links a:hover { color: var(--primary); }
+.foot-links a:hover { color: #c06bff; }
 
 .foot-in {
   display: flex;
@@ -819,8 +830,8 @@ ul, ol { list-style: none; }
 .rv {
   opacity: 0;
   transform: translateY(22px);
-  transition: opacity var(--d-slow) var(--ease), transform var(--d-slow) var(--ease);
-  transition-delay: calc(var(--i, 0) * 90ms);
+  transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 80ms);
 }
 .rv[data-in='true'] { opacity: 1; transform: translateY(0); }
 
@@ -853,7 +864,7 @@ ul, ol { list-style: none; }
 
   /* мягче, чем «ноль»: остаётся прозрачность, уходит только движение */
   .rv { transform: none; transition-delay: 0ms; }
-  .float { animation: none; transform: rotate(-2deg); }
+  .float { animation: none; transform: none; }
   .status-dot { animation: none; }
   .menu-list a { transform: none; }
 }
