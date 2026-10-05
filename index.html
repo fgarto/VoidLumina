@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoidLumina - приватный ванильный сервер Minecraft 26.2</title>
+  <meta name="description" content="VoidLumina - приватный ванильный сервер на версии 26.2. Идёт набор игроков: могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.">
+  <meta name="theme-color" content="#111111">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:title" content="VoidLumina - приватный ванильный сервер 26.2">
+  <meta property="og:description" content="Сервер ещё не открыт. Идёт набор игроков: могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.">
+  <link rel="icon" href="favicon64.jpg" type="image/jpeg" sizes="64x64">
+  <link rel="icon" href="favicon512.jpg" type="image/jpeg" sizes="512x512">
+  <link rel="apple-touch-icon" href="favicon180.jpg">
+
+  <link rel="preload" as="image" href="photo.jpg" fetchpriority="high">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <a class="skip" href="#main">Перейти к содержимому</a>
+
+  <!-- Обводочная иконкария, viewBox 24x24, stroke-first: красим обводку,
+       заливка на всех символах отключена в style.css. -->
+  <svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-pick" viewBox="0 0 24 24">
+      <path d="M13 8l-9.383 9.418a2.091 2.091 0 0 0 0 2.967a2.11 2.11 0 0 0 2.976 0l9.407 -9.385"/>
+      <path d="M9 3h4.586a1 1 0 0 1 .707 .293l6.414 6.414a1 1 0 0 1 .293 .707v4.586a2 2 0 1 1 -4 0v-3l-5 -5h-3a2 2 0 1 1 0 -4"/>
+    </symbol>
+    <symbol id="i-skull" viewBox="0 0 24 24">
+      <path d="M12 3a8 8 0 0 0-8 8v1.6a5 5 0 0 0 2 4v2.4h12v-2.4a5 5 0 0 0 2-4V11a8 8 0 0 0-8-8Z"/>
+      <path d="M9.5 10.6h.01"/>
+      <path d="M14.5 10.6h.01"/>
+      <path d="M10 19v2M14 19v2"/>
+    </symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24">
+      <path d="M9 5.5a3 3 0 0 1 6 0V11a3 3 0 0 1-6 0Z"/>
+      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/>
+      <path d="M12 18v3M9 21h6"/>
+    </symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M8.5 14a4.5 4.5 0 0 0 7 0"/>
+      <path d="M9 10h.01"/>
+      <path d="M15 10h.01"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3l7.5 3.2v5.4c0 4.4-3.1 8.3-7.5 9.9c-4.4-1.6-7.5-5.5-7.5-9.9V6.2Z"/>
+      <path d="M9.4 11.6l1.9 1.9l3.4-3.6"/>
+    </symbol>
+    <symbol id="i-mountains" viewBox="0 0 24 24">
+      <path d="M3 19.5h18"/>
+      <path d="M7 19.5l5-11l3.5 7.5L18 11l3 8.5"/>
+    </symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24">
+      <path d="M3 12V5a2 2 0 0 1 2-2h7l9 9l-9 9Z"/>
+      <path d="M7.5 7.5h.01"/>
+    </symbol>
+    <symbol id="i-rebuild" viewBox="0 0 512 512">
+      <path d="M481.7 0H30.3C13.6 0 0 13.6 0 30.3v451.3C0 498.4 13.6 512 30.3 512h451.3c16.8 0 30.3-13.6 30.3-30.3V30.3C512 13.6 498.4 0 481.7 0m-72.6 204.8H306.7V256h50.7v178.2h-50.7v-76.8H204.8v76.8h-50.7V256h50.7v-51.2H102.4V102.4h102.4v102.4h101.9V102.4h102.4z"/>
+      <path opacity=".75" d="M154.1 256h50.7v25.1h-50.7zm50.7-26.1h101.9v-25.1H204.8zm101.9 51.2h50.7V256h-50.7zm0-178.7V128H383v76.3h-76.3v.5h102.4V102.4zm-101.9 0v102.4H102.4V102.4zm-.5 25.6H128v76.3h76.3z"/>
+      <path opacity=".25" d="M204.3 204.3H128V128h76.3zM306.7 128v76.3H383V128zm0 101.9H204.8v51.2h-50.7v153.1h50.7v-76.8h101.9v76.8h50.7V281.1h-50.7z"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M7 17L17 7"/>
+      <path d="M8.5 7H17v8.5"/>
+    </symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24">
+      <path d="M5 9l7 7l7 -7"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <path d="M4 8h16M4 16h16"/>
+    </symbol>
+  </svg>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="hdr">
+    <div class="hdr-in">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true"><img src="favicon180.jpg" alt="" width="34" height="34"></span>
+        VoidLumina
+      </a>
+
+      <nav class="hdr-links" aria-label="Основная навигация">
+        <a href="#features">Фишки</a>
+        <a href="#how">Как попасть</a>
+        <a href="#faq">Вопросы</a>
+      </nav>
+
+      <a class="btn btn--primary hdr-cta" href="#discord">Вступить</a>
+
+      <button class="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="menu">
+        <svg aria-hidden="true"><use href="#i-list"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="menu" id="menu" data-open="false">
+    <nav class="menu-list" aria-label="Мобильная навигация">
+      <a href="#features">Фишки</a>
+      <a href="#how">Как попасть</a>
+      <a href="#faq">Вопросы</a>
+      <a href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a>
+    </nav>
+    <p class="menu-foot">Сервер ещё не открыт</p>
+  </div>
+
+  <main id="main">
+    <!-- ------------------------------------------------------- Hero -->
+    <section class="hero" id="top">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="photo.jpg" width="1920" height="1080" alt="" fetchpriority="high">
+      </div>
+      <div class="hero-scrim" aria-hidden="true"></div>
+
+      <div class="shell hero-in">
+        <div class="hero-txt">
+          <p class="status"><span class="status-dot" aria-hidden="true"></span>Набор игроков</p>
+
+          <h1>VoidLumina - приватный ванильный сервер</h1>
+
+          <p class="hero-sub" data-hero-sub>Идёт набор игроков. Могилы с вещами, голосовой чат, эмоции, жители-стражи и своя генерация мира.</p>
+
+          <div class="hero-cta">
+            <a class="btn btn--primary" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">
+              Вступить в Discord
+              <span class="btn-ico" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+            </a>
+            <a class="btn btn--ghost" href="#features">Что будет на сервере</a>
+          </div>
+        </div>
+
+        <figure class="hero-art">
+          <img class="float" src="pose-hero.png" alt="Скриншот будущего мира VoidLumina" width="535" height="919" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Параметры -->
+    <section class="band" aria-label="Параметры сервера">
+      <div class="shell">
+        <div class="facts rv">
+          <div class="fact tint">
+            <b>26.2</b>
+            <span>Версия</span>
+          </div>
+          <div class="fact tint">
+            <b>Vanilla+</b>
+            <span>Режим</span>
+          </div>
+          <div class="fact tint">
+            <b>2</b>
+            <span>Мода на клиенте</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Фишки -->
+    <section class="band" id="features">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Что будет на сервере</h2>
+          <p>Обычная ванилла плюс детали, которых нет на типичных серверах. Всё это включим в день открытия.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card tint span-5 row-2 rv" style="--i:0">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-pick"/></svg></span>
+            <h3>Кирка - как альпийский топорик</h3>
+            <p>Кирка работает как альпийский топорик - так удобнее карабкаться по горам и льду, и выглядит она именно так, как задумано.</p>
+          </article>
+
+          <article class="card tint span-4 rv" style="--i:1">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-skull"/></svg></span>
+            <h3>Могилы</h3>
+            <p>Умер - не потерял. Вещи остаются в могиле, и ты всегда можешь вернуться, чтобы забрать их.</p>
+          </article>
+
+          <article class="card tint span-3 rv" style="--i:2">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
+            <h3>Голосовой чат</h3>
+            <p>Говори с игроками прямо в игре через Simple Voice Chat. Никаких сторонних приложений и голосового в Discord.</p>
+          </article>
+
+          <article class="card tint span-3 rv" style="--i:3">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-smile"/></svg></span>
+            <h3>Эмоции</h3>
+            <p>Покажи радость, злость или удивление через EmoteCraft - один из двух модов, которые нужны для входа.</p>
+          </article>
+
+          <article class="card card--deep tint span-4 rv" style="--i:4">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-shield"/></svg></span>
+            <h3>Жители-стражи</h3>
+            <p>Жители выглядят как игроки и умеют защищаться. Не заходи в их деревню с плохими намерениями.</p>
+          </article>
+
+          <article class="card tint span-5 rv" style="--i:5">
+            <span class="card-ico" aria-hidden="true"><svg><use href="#i-mountains"/></svg></span>
+            <h3>Своя генерация</h3>
+            <p>Мир генерируется по своим правилам - не по ванильным.</p>
+          </article>
+
+          <article class="card card--accent card--split tint span-7 rv" id="prefixes" style="--i:6">
+            <div>
+              <span class="card-ico" aria-hidden="true"><svg><use href="#i-tag"/></svg></span>
+              <h3>Кастомные префиксы</h3>
+              <p>Цветной префикс перед ником - в TAB, в табло и в чате.</p>
+            </div>
+            <p class="card-note">
+              Напиши в <a class="link" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a> - выдадим нужный.
+            </p>
+          </article>
+
+          <article class="card tint span-5 rv" style="--i:7">
+            <span class="card-ico" aria-hidden="true"><svg class="ico-fill" viewBox="0 0 512 512"><use href="#i-rebuild"/></svg></span>
+            <h3>Взорвался крипер?</h3>
+            <p>Не переживай - блоки сами восстановятся, и ресурсы тоже.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Как попасть -->
+    <section class="band" id="how">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Как попасть в первых</h2>
+        </div>
+
+        <ol class="steps">
+          <li class="step tint rv" style="--i:0">
+            <span class="step-n" aria-hidden="true">01</span>
+            <div>
+              <h3>Вступи в Discord</h3>
+              <p>Подключаться пока некуда - сервер ещё не запущен. Discord остаётся единственным местом, где мы пишем новости.</p>
+            </div>
+          </li>
+          <li class="step tint rv" style="--i:1">
+            <span class="step-n" aria-hidden="true">02</span>
+            <div>
+              <h3>Следи за анонсом</h3>
+              <p>Как только мы наберём достаточно игроков, в Discord появится дата открытия и адрес сервера.</p>
+            </div>
+          </li>
+          <li class="step tint rv" style="--i:2">
+            <span class="step-n" aria-hidden="true">03</span>
+            <div>
+              <h3>Заходи первым</h3>
+              <p>Кто будет в Discord в день открытия - попадёт в первых. Перед запуском поставь два мода на клиент, подробности выдадим в Discord.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Вопросы -->
+    <section class="band" id="faq">
+      <div class="shell">
+        <div class="sec-head rv">
+          <h2>Вопросы и ответы</h2>
+        </div>
+
+        <div class="faq">
+          <div class="faq-row tint rv" style="--i:0">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-0" aria-expanded="false" aria-controls="faq-a-0">
+                <span>Нужны ли моды?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-0" role="region" aria-labelledby="faq-q-0">
+              <div class="faq-a-in">
+                <p>Да, всего два. EmoteCraft - эмоции, Simple Voice Chat - голос рядом с игроком. Ставятся на клиент, серверную часть мы ставим сами.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:1">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-1" aria-expanded="false" aria-controls="faq-a-1">
+                <span>Нужна ли лицензия для входа?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-1" role="region" aria-labelledby="faq-q-1">
+              <div class="faq-a-in">
+                <p>Нет, лицензия не обязательна. Можно заходить и с пиратской версии.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:2">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-2" aria-expanded="false" aria-controls="faq-a-2">
+                <span>Можно ли зайти с Bedrock?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-2" role="region" aria-labelledby="faq-q-2">
+              <div class="faq-a-in">
+                <p>Нет, с Bedrock зайти не получится. Сервер только для Java.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:3">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-3" aria-expanded="false" aria-controls="faq-a-3">
+                <span>Какая версия сервера?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-3" role="region" aria-labelledby="faq-q-3">
+              <div class="faq-a-in">
+                <p>26.2. Стандартный клиент Minecraft, из модов - только два.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:4">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-4" aria-expanded="false" aria-controls="faq-a-4">
+                <span>Какое ядро сервера?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-4" role="region" aria-labelledby="faq-q-4">
+              <div class="faq-a-in">
+                <p>Paper. Плагины свои, ванильные механики не ломаем.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:5">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-5" aria-expanded="false" aria-controls="faq-a-5">
+                <span>Нужны ли приваты?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-5" role="region" aria-labelledby="faq-q-5">
+              <div class="faq-a-in">
+                <p>Нет. Всё открыто, а защита строится на могилах и ручном сговоре.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:6">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-6" aria-expanded="false" aria-controls="faq-a-6">
+                <span>Кого вы ждёте на сервере?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-6" role="region" aria-labelledby="faq-q-6">
+              <div class="faq-a-in">
+                <p>Мы набираем тех, кому интересна спокойная ванилла: кто-то строит своё, кто-то общается с другими, кто-то исследует мир. Таких людей мы и ищем - без гриферства, спама и хамства в чате.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:7">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-7" aria-expanded="false" aria-controls="faq-a-7">
+                <span>Где узнать о фишках подробнее?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-7" role="region" aria-labelledby="faq-q-7">
+              <div class="faq-a-in">
+                <p>В Discord. Там же мы выдаём префиксы и пишем дату открытия.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-row tint rv" style="--i:8">
+            <h3>
+              <button class="faq-btn" type="button" id="faq-q-8" aria-expanded="false" aria-controls="faq-a-8">
+                <span>Когда сервер откроется?</span>
+                <svg class="faq-chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a-8" role="region" aria-labelledby="faq-q-8">
+              <div class="faq-a-in">
+                <p>Точной даты пока нет. Ориентируемся на набор игроков, чтобы открыться сразу с полным онлайном.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Discord -->
+    <section class="band band--discord" id="discord">
+      <div class="shell">
+        <div class="discord-card rv">
+          <div>
+            <h2>Заходи в наш Discord</h2>
+            <p>Новости сервера, дата открытия, адрес подключения и выдача префиксов - всё в одном месте.</p>
+          </div>
+          <a class="btn btn--primary" href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">
+            Открыть Discord
+            <span class="btn-ico" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="shell">
+      <div class="foot-grid">
+        <div class="foot-col">
+          <h2>Используемые ресурспаки</h2>
+          <ul class="credits">
+            <li>
+              <span class="credits-name">Mars's Enchanted Book Textures</span>
+              <span class="credits-desc">MIT</span>
+            </li>
+            <li>
+              <span class="credits-name">RAY's 3D Rails <span class="credits-ver">v3.6</span></span>
+              <span class="credits-desc">от xR4YM0ND, MIT</span>
+            </li>
+            <li>
+              <span class="credits-name">Better Leaves <span class="credits-ver">v9.6</span></span>
+              <span class="credits-desc">от Motschen &amp; TeamMidnightDust, MIT</span>
+            </li>
+          </ul>
+          <p class="foot-note">Все права на оригинальные текстуры и модели принадлежат их авторам. Проекты используются в ознакомительных целях на бесплатной основе.</p>
+        </div>
+
+        <div class="foot-col">
+          <h2>VoidLumina</h2>
+          <ul class="foot-links">
+            <li><a href="#features">Фишки</a></li>
+            <li><a href="#how">Как попасть</a></li>
+            <li><a href="#faq">Вопросы</a></li>
+            <li><a href="https://discord.gg/TjJ9yYwTCK" target="_blank" rel="noopener noreferrer">Discord</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot-in">
+        <p>VoidLumina</p>
+        <p>Сервер ещё не открыт</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
